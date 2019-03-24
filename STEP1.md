@@ -4,13 +4,26 @@
 
 - Mac mini 2.8GHz Intel Core i5
 - macOS Mojave (10.14.3)
+
+    ```bash
+    $ cc -v
+    Apple LLVM version 10.0.0 (clang-1000.11.45.5)
+    Target: x86_64-apple-darwin18.2.0
+    Thread model: posix
+    ```
+
 - gcc-8.3.0 (binutils-2.32, gmp-6.1.2, mpfr-4.0.2, mpc-1.1.0)
 
-    gcc等のインストール法についてはバージョンは違うが、[ここ](http://d.hatena.ne.jp/satfy/20101226/1293370919)に書かれているとおり。ただし、`prefix`を**gcc**と**binutils**は`/usr/local/h8/h8300`、その他は`/usr/local/h8/[gmp|mpfr|mpc]`とした。
+    gcc等のインストール法についてはバージョンは違うが、[ここ](http://d.hatena.ne.jp/satfy/20101226/1293370919)に書かれているとおり。ただし、`prefix`を**gcc**と**binutils**は`/usr/local/h8/h8-elf`、その他は`/usr/local/h8/[gmp|mpfr|mpc]`とした。
 
 - [USBシリアル変換ケーブル](http://akizukidenshi.com/catalog/faq/goodsfaq.aspx?goods=M-02746)で接続（延長ケーブルがないとマイコンに接続できないことを後で知り、追加購入）
 - USBシリアルドライバは[Prolificのサイト](http://www.prolific.com.tw/US/ShowProduct.aspx?p_id=229&pcid=41)から**PL2303**用の[Mac用最新版](http://www.prolific.com.tw/UserFiles/files/PL2303_MacOSX_1_6_1_20171018.zip)をダウンロードしてインストール。
 - `/dev/cu.usbserial`で認識した。
+
+    ```bash
+    $ ls -l /dev/cu.usbserial
+    crw-rw-rw-  1 root  wheel   18,   3  3 24 15:46 /dev/cu.usbserial
+    ```
 
 ## ステップ1の作業
 
@@ -67,7 +80,7 @@ kzload.elf*	lib.o		serial.h	vector.c
 1. DIPスイッチをセット(on, on, off, on)
 2. シリアル線接続
 3. 電源オン
-4. 書き込み処理
+4. 書き込み処理（一般ユーザにも/dev/cu.usbserialにrw権があるので一般ユーザで実行できる）
 
 ```bash
 $ make write
@@ -85,7 +98,7 @@ EEPROM Writing is successed.
 ### 5. 実行
 
 1. DIPスイッチをセット(on, off, on, off)
-2. シリアル接続
+2. シリアル接続（一般ユーザにも/dev/cu.usbserialにrw権があるので一般ユーザで実行できる）
 
 ```bash
 $ cu -l /dev/cu.usbserial
