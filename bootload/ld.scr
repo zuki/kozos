@@ -21,6 +21,8 @@ SECTIONS
         . = ALIGN(4);/* http://kozos.jp/books/makeos/index.html#binutils-new */
     }
 
+    . = 0xffbf20;
+
     .data : {
         *(.data)
     }
