@@ -26,7 +26,7 @@ CFLAGS  = -Wall -mh -nostdinc -nostdlib -fno-builtin
 #CFLAGS += -mint32      # intを32ビットにすると掛算/割算ができなくなる
 CFLAGS += -I.
 #CFLAGS += -g
-CFLAGS += -Os
+CFLAGS += -Os -Wno-pointer-sign
 CFLAGS += -DKZLOAD
 
 LFLAGS = -static -T ld.scr -L.
