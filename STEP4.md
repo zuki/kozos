@@ -53,3 +53,63 @@ e3 83 aa e3 82 a2 e3 83  ab e3 83 87 e3 83 90 e3
 
 kzload> ~.
 ```
+
+## アセンブラ
+
+- 最適化パラメタを変えると結果が変わる。`-Os`ではスタックフレームを使用していない。
+
+```
+$ vi lib.h, lib.c, main.c
+$ make
+$ /usr/local/h8/h8-elf/h8300-elf-objdump -d kzload.elf
+
+# -Os
+00000504 <_main>:
+ 542:   79 01 00 02     mov.w   #0x2,r1
+ 546:   79 00 00 01     mov.w   #0x1,r0
+ 54a:   5e 00 03 1a     jsr @0x31a:24
+
+0000031a <_func>:
+ 31a:   1b 97           subs    #4,er7
+ 31c:   09 10           add.w   r1,r0
+ 31e:   6f f0 00 02     mov.w   r0,@(0x2:16,er7)
+ 322:   6f 70 00 02     mov.w   @(0x2:16,er7),r0
+ 326:   0b 97           adds    #4,er7
+ 328:   54 70           rts
+
+# -O0
+0000027e <_main>:
+ 288:   79 01 00 02     mov.w   #0x2,r1
+ 28c:   79 00 00 01     mov.w   #0x1,r0
+ 290:   5e 00 09 0c     jsr @0x90c:24
+
+0000090c <_func>:
+ 90c:   01 00 6d f6     mov.l   er6,@-er7
+ 910:   0f f6           mov.l   er7,er6
+ 912:   7a 37 00 00     sub.l   #0x8,er7
+ 916:   00 08
+ 918:   6f e0 ff fa     mov.w   r0,@(0xfffa:16,er6)
+ 91c:   6f e1 ff f8     mov.w   r1,@(0xfff8:16,er6)
+ 920:   6f 63 ff fa     mov.w   @(0xfffa:16,er6),r3
+ 924:   6f 62 ff f8     mov.w   @(0xfff8:16,er6),r2
+ 928:   09 32           add.w   r3,r2
+ 92a:   6f e2 ff fe     mov.w   r2,@(0xfffe:16,er6)
+ 92e:   6f 62 ff fe     mov.w   @(0xfffe:16,er6),r2
+ 932:   0d 20           mov.w   r2,r0
+ 934:   0b 97           adds    #4,er7
+ 936:   0b 97           adds    #4,er7
+ 938:   01 00 6d 76     mov.l   @er7+,er6
+ 93c:   54 70           rts
+ ```
+
+### -O0のfunc()のスタックフレーム
+
+```
+ X0000100  <= return address             |  938: => er7
+ X00000fc  <= er6                        |  935: => er7
+ X00000fa  <= c = @(0xfffe:16,er6)       |
+ X00000f8  <=                            |  934: => er7
+ X00000f6  <= a = @(0xfffa:16,er6)       |
+ X00000f4  <= b = @(0xfff8:16,er6), er7  |
+ X00000f0
+ ```
