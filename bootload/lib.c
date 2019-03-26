@@ -22,8 +22,7 @@ void *memcpy(void *dst, const void *src, long len)
 int memcmp(const void *b1, const void *b2, long len)
 {
   const char *p1 = b1, *p2 = b2;
-  for (; len > 0; len--)
-  {
+  for (; len > 0; len--) {
     if (*p1 != *p2)
       return (*p1 > *p2) ? 1 : -1;
     p1++;
@@ -40,12 +39,12 @@ int strlen(const char *s)
   return len;
 }
 
-char *strcpy(char *dst, const char *str)
+char *strcpy(char *dst, const char *src)
 {
   char *d = dst;
-  for (;; dst++, str++) {
-    *dst = *str;
-    if (!*str) break;
+  for (;; dst++, src++) {
+    *dst = *src;
+    if (!*src) break;
   }
   return d;
 }
@@ -74,19 +73,44 @@ int strncmp(const char *s1, const char *s2, int len)
 }
 
 /* 一文字送信 */
-int putc(char c)
+int putc(unsigned char c)
 {
   if (c == '\n')
     serial_send_byte(SERIAL_DEFAULT_DEVICE, '\r');
   return serial_send_byte(SERIAL_DEFAULT_DEVICE, c);
 }
 
+/* 一文字受信 */
+unsigned char getc(void)
+{
+  unsigned char c = serial_recv_byte(SERIAL_DEFAULT_DEVICE);
+  c = (c == '\r') ? '\n' : c;
+  putc(c);  /* エコー・バック */
+  return c;
+}
+
 /* 文字列送信 */
-int puts(char *str)
+int puts(unsigned char *str)
 {
   while(*str)
     putc(*(str++));
   return 0;
+}
+
+/* 文字列受信 */
+int gets(unsigned char *buf)
+{
+  int i = 0;
+  unsigned char c;
+
+  do {
+    c = getc();
+    if (c == '\n')
+      c = '\0';
+    buf[i++] = c;
+  } while (c);
+
+  return i - 1;
 }
 
 /* 数値の16進表示 */
@@ -95,7 +119,7 @@ int putxval(unsigned long value, int column)
   char buf[9];
   char *p;
 
-  p = buf + sizeof(buf);
+  p = buf + sizeof(buf) - 1;
   *(p--) = '\0';
 
   if (!value && !column)
