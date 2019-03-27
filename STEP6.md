@@ -35,8 +35,6 @@ cp kozos kozos.elf
 $ ls -l
 -rwxr-xr-x  1 dspace  staff  1300  3 27 11:05 kozos
 -rwxr-xr-x  1 dspace  staff  3160  3 27 11:05 kozos.elf
--rwxr-xr-x  1 dspace  staff  1300  3 27 11:05 kozos
--rwxr-xr-x  1 dspace  staff  3160  3 27 11:05 kozos.elf
 $ h8300-elf-readelf -a kozos.elf
 ELF Header:
   Entry point address:               0xffc020
