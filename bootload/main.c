@@ -1,6 +1,7 @@
 #include "defines.h"
 #include "serial.h"
 #include "xmodem.h"
+#include "srec.h"
 #include "elf.h"
 #include "lib.h"
 
@@ -18,6 +19,8 @@ static int init(void)
 
   /* シリアルの初期化 */
   serial_init(SERIAL_DEFAULT_DEVICE);
+
+  srec_init();
 
   return 0;
 }
@@ -38,7 +41,7 @@ static int dump(char *buf, long size)
       puts("\n");
     } else {
       if ((i & 0xf) == 7) puts(" ");
-      puts(" ");
+      /* puts(" "); */
     }
   }
   puts("\n");
@@ -71,28 +74,38 @@ int main(void)
     puts("kzload> "); /* プロンプト表示 */
     gets(buf);        /* シリアルからのコマンド受信 */
 
-    if (!strcmp(buf, "load")) { /* XMODEMによるファイルのダウンロード */
-      loadbuf = (char *)(&buffer_start);
+    if (!strcmp(buf, "load") || !strcmp(buf, "loadelf")) { /* XMODEMによるファイルのダウンロード */
+      if (!strcmp(buf, "load"))
+        loadbuf = NULL;
+      else
+        loadbuf = (char *)(&buffer_start);
       size = xmodem_recv(loadbuf);
       wait(); /* 転送アプリが終了し端末アプリに制御が戻るまで待ち合わせる */
       if (size < 0) {
         puts("\nXMODEM receive error!\n");
       } else {
         puts("\nXMODEM receive succeeded.\n");
+        puts("  size: ");
+        putxval(size, 0);
+        puts("\n");
       }
     } else if (!strcmp(buf, "dump")) {  /* メモリの16進ダンプ出力 */
-      puts("size: ");
-      putxval(size, 0);
+      if (loadbuf) {
+        dump(loadbuf, size);
+      } else {
+        dump(srec_startaddr(), size);
+      }
+    } else if (!strcmp(buf, "run") || !strcmp(buf, "runelf")) {
+      if (!strcmp(buf, "run"))
+        entry_point = srec_startaddr();
+      else
+        entry_point = elf_load(loadbuf);
+      puts("starting from entry point: ");
+      putxval((unsigned long)entry_point, 0);
       puts("\n");
-      dump(loadbuf, size);
-    } else if (!strcmp(buf, "run")) {   /* ELF形式ファイルの実行 */
-      entry_point = elf_load(loadbuf);  /* メモリ上に展開（ロード） */
       if (!entry_point) {
         puts("run error!\n");
       } else {
-        puts("starting from entry point: ");
-        putxval((unsigned long)entry_point, 0);
-        puts("\n");
         f = (void (*)(void))entry_point;
         f();  /* ロードしたプログラムに処理を渡す */
         /* ここには返ってこない */
