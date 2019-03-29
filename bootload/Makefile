@@ -17,7 +17,7 @@ H8WRITE = ../tools/h8write/h8write
 
 H8WRITE_SERDEV = /dev/cu.usbserial        # シリアルデバイスファイル名
 
-OBJS    = vector.o startup.o main.o
+OBJS    = vector.o startup.o intr.o main.o interrupt.o
 OBJS   += lib.o serial.o xmodem.o elf.o
 
 TARGET  = kzload
@@ -33,6 +33,7 @@ LFLAGS = -static -T ld.scr -L.
 
 .SUFFIXES:	.c .o
 .SUFFIXEs:	.s .o
+.SUFFIXEs:	.S .o
 
 all:		$(TARGET)
 
@@ -46,6 +47,10 @@ $(TARGET):	$(OBJS)
 
 .s.o:		$<
 		$(CC) -c $(CFLAGS) $<
+
+.S.o:		$<
+		$(CC) -c $(CFLAGS) $<
+
 
 $(TARGET).mot:	$(TARGET)
 	        $(OBJCOPY) -O srec $(TARGET) $(TARGET).mot
