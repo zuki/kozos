@@ -31,19 +31,19 @@ static int kzmem_init_pool(kzmem_pool *p)
 {
   int i;
   kzmem_block *mp;
-  kzmem_block **mmp;
+  kzmem_block **mpp ;
   extern char freearea;
   static char *area = &freearea;
 
   mp = (kzmem_block *)area;
 
   /* 個々の領域をすべて開放済みリンクリストにつなぐ */
-  mmp = &p->free;
+  mpp = &p->free;
   for (i = 0; i < p->num; i++) {
-    *mmp = mp;
+    *mpp = mp;
     memset(mp, 0, sizeof(*mp));
     mp->size = p->size;
-    mmp = &(mp->next);
+    mpp = &(mp->next);
     mp = (kzmem_block *)((char *)mp + p->size);
     area += p->size;
   }
