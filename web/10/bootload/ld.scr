@@ -1,0 +1,56 @@
+OUTPUT_FORMAT("elf32-h8300")
+OUTPUT_ARCH(h8300h)
+ENTRY("_start")
+
+MEMORY
+{
+	vectors(r)	: o = 0x000000, l = 0x000100 /* top of ROM */
+	rom(rx)		: o = 0x000100, l = 0x07ff00 /* 512kb */
+	ram(rwx)	: o = 0xffbf20, l = 0x004000 /*  16kb */
+	buffer(rwx)	: o = 0xffdf20, l = 0x002000 /*   8kb */
+	data(rwx)	: o = 0xffdf20+7400, l = 0x002000-7400 /* -BUFSIZE */
+	stack(rw)	: o = 0xffff00, l = 0x000010 /* end of RAM */
+}
+
+SECTIONS
+{
+	.vectors : {
+		vector.o(.data)
+	} > vectors
+
+	.text :	{
+		_text_start = . ;
+		*(.text)
+		_etext = . ;
+	} > rom
+
+	.rodata : {
+		_rodata_start = . ;
+		*(.strings)
+		*(.rodata)
+		_erodata = . ;
+	} > rom
+
+	.buffer : {
+		_buffer_start = . ;
+	} > buffer
+
+	.data : AT(_erodata) {
+		_data_start = . ;
+		*(.data)
+		_edata = . ;
+	} > data
+
+	.bss : {
+		_bss_start = . ;
+		*(.bss)
+		*(COMMON)
+		_ebss = . ;
+	} > data
+
+	_end = . ;
+
+	.stack : {
+		_stack = .;
+	} > stack
+}
