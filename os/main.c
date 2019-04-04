@@ -3,6 +3,17 @@
 #include "interrupt.h"
 #include "lib.h"
 
+static int init()
+{
+  extern int bss_start;
+  extern int ebss;
+
+  /* clear BSS */
+  memset(&bss_start, 0, (uint32)&ebss - (uint32)&bss_start);
+
+  return 0;
+}
+
 /* システムタスクとユーザタスクの起動 */
 static int start_threads(int argc, char *argv[])
 {
@@ -20,6 +31,8 @@ static int start_threads(int argc, char *argv[])
 
 int main(void)
 {
+  init();
+
   INTR_DISABLE;   /* 割込みを無効にする */
 
   puts("kozos boot succeed!\n");

@@ -1,5 +1,6 @@
 #include "defines.h"
 #include "serial.h"
+#include "srec.h"
 #include "lib.h"
 #include "xmodem.h"
 
@@ -29,7 +30,7 @@ static int xmodem_wait(void)
 }
 
 /* ブロック単位での受信 */
-static int xmodem_read_block(unsigned char block_number, char *buf)
+static int xmodem_read_block(unsigned char block_number)
 {
   unsigned char c, block_num, check_sum;
   int i;
@@ -45,7 +46,8 @@ static int xmodem_read_block(unsigned char block_number, char *buf)
   check_sum = 0;
   for (i = 0; i < XMODEM_BLOCK_SIZE; i++) {
     c = serial_recv_byte(SERIAL_DEFAULT_DEVICE);
-    *(buf++) = c;
+    if (srec_decode(c) < 0)
+ 	    return -1;
     check_sum += c;
   }
 
@@ -53,14 +55,16 @@ static int xmodem_read_block(unsigned char block_number, char *buf)
   if (check_sum)
     return -1;
 
-  return i;
+  return 0;
 }
 
-long xmodem_recv(char *buf)
+long xmodem_recv()
 {
-  int r, receiving = 0;
+  int receiving = 0;
   long size = 0;
   unsigned char c, block_number = 1;
+
+  srec_init();
 
   while (1) {
     if (!receiving)
@@ -75,13 +79,12 @@ long xmodem_recv(char *buf)
       return -1;
     } else if (c == XMODEM_SOH) { /* 受信開始 */
       receiving++;
-      r = xmodem_read_block(block_number, buf); /* ブロック単位での受信 */
-      if (r < 0) {  /* 受信エラー */
+      /* ブロック単位での受信 */
+      if (xmodem_read_block(block_number) < 0) {  /* 受信エラー */
         serial_send_byte(SERIAL_DEFAULT_DEVICE, XMODEM_NAK);
       } else {      /* 正常受信 */
         block_number++;
-        size += r;
-        buf  += r;
+        size += XMODEM_BLOCK_SIZE;
         serial_send_byte(SERIAL_DEFAULT_DEVICE, XMODEM_ACK);
       }
     } else {

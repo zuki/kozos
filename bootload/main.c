@@ -2,6 +2,7 @@
 #include "interrupt.h"
 #include "serial.h"
 #include "xmodem.h"
+#include "srec.h"
 #include "elf.h"
 #include "lib.h"
 
@@ -62,10 +63,8 @@ int main(void)
 {
   static char buf[16];
   static long size = -1;
-  static unsigned char *loadbuf = NULL;
   char *entry_point;
   void (*f)(void);
-  extern int buffer_start;  /* リンカスクリプトで定義されているバッファ */
 
   INTR_DISABLE;   /* 割込みを無効にする */
 
@@ -78,21 +77,23 @@ int main(void)
     gets(buf);        /* シリアルからのコマンド受信 */
 
     if (!strcmp(buf, "load")) { /* XMODEMによるファイルのダウンロード */
-      loadbuf = (char *)(&buffer_start);
-      size = xmodem_recv(loadbuf);
+      size = xmodem_recv();
       wait(); /* 転送アプリが終了し端末アプリに制御が戻るまで待ち合わせる */
-      if (size < 0) {
-        puts("\nXMODEM receive error!\n");
+      if (size <= 0) {
+        puts("XMODEM receive error.\n");
       } else {
-        puts("\nXMODEM receive succeeded.\n");
+        puts("XMODEM receive succeeded.\n");
       }
     } else if (!strcmp(buf, "dump")) {  /* メモリの16進ダンプ出力 */
       puts("size: ");
       putxval(size, 0);
       puts("\n");
-      dump(loadbuf, size);
+      puts("starting from entry point: ");
+      putxval((unsigned long)srec_startaddr(), 0);
+      puts("\n");
+      dump(srec_startaddr(), size);
     } else if (!strcmp(buf, "run")) {   /* ELF形式ファイルの実行 */
-      entry_point = elf_load(loadbuf);  /* メモリ上に展開（ロード） */
+      entry_point = srec_startaddr();  /* メモリ上に展開（ロード） */
       if (!entry_point) {
         puts("run error!\n");
       } else {
