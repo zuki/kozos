@@ -4,10 +4,15 @@ ENTRY("_start")
 
 MEMORY
 {
+    /* internal ROM (512KB) */
     romall(rx)      : o = 0x000000, l = 0x080000 /* 512KB */
     vectors(r)      : o = 0x000000, l = 0x000100 /* top of ROM */
     rom(rx)         : o = 0x000100, l = 0x07ff00
 
+    /* DRAM (2MB) */
+    dramall(rwx)    : o = 0x400000, l = 0x400000 /* 2MB */
+
+    /* internal RAM (16KB) */
     ramall(rwx)     : o = 0xffbf20, l = 0x004000 /* 16KB */
     softvec(rw)     : o = 0xffbf20, l = 0x000040 /* top of RAM */
     data(rwx)       : o = 0xffbf60, l = 0x003f90

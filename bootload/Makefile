@@ -18,7 +18,7 @@ H8WRITE = ../tools/h8write/h8write
 H8WRITE_SERDEV = /dev/cu.usbserial        # シリアルデバイスファイル名
 
 OBJS    = vector.o startup.o intr.o main.o interrupt.o
-OBJS   += lib.o serial.o xmodem.o elf.o srec.o
+OBJS   += lib.o serial.o xmodem.o elf.o srec.o dram.o
 
 TARGET  = kzload
 

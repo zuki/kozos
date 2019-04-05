@@ -4,6 +4,7 @@
 #include "xmodem.h"
 #include "srec.h"
 #include "elf.h"
+#include "dram.h"
 #include "lib.h"
 
 static int init(void)
@@ -23,6 +24,9 @@ static int init(void)
 
   /* シリアルの初期化 */
   serial_init(SERIAL_DEFAULT_DEVICE);
+
+  /* DRAMの初期化 */
+  dram_init();
 
   return 0;
 }
@@ -104,6 +108,12 @@ int main(void)
         f();  /* ロードしたプログラムに処理を渡す */
         /* ここには返ってこない */
       }
+    } else if (!strcmp(buf, "ramchk")) {
+      dram_check();
+    } else if (!strcmp(buf, "ramchk2")) {
+      dram_check2();
+    } else if (!strcmp(buf, "ramclr")) {
+      dram_clear();
     } else {
       puts("unknown.\n");
     }
