@@ -1,12 +1,8 @@
 #include "defines.h"
 #include "kozos.h"
 #include "consdrv.h"
+#include "timerdrv.h"
 #include "lib.h"
-
-#if 1
-#include "timer.h"
-#include "intr.h"
-#endif
 
 /* コンソールドライバの使用開始をコンソールドライバに依頼する */
 static void send_use(int index)
@@ -32,16 +28,14 @@ static void send_write(char *str)
   kz_send(MSGBOX_ID_CONSOUTPUT, len + 2, p);
 }
 
-void timer_intr(softvec_type_t type, unsigned long sp)
+/* タイマのカウント開始をmタイマドライバに依頼する */
+static void send_start(int msec)
 {
-  if (timer_is_expired(0)) {
-    puts("timer expired 0.\n");
-    timer_expire(0);
-  }
-  if (timer_is_expired(1)) {
-    puts("timer expired 1.\n");
-    timer_cancel(1);
-  }
+  struct timerreq *req;
+  req = kz_kmalloc(sizeof(*req));
+  req->id = MSGBOX_ID_CONSINPUT;
+  req->msec = msec;
+  kz_send(MSGBOX_ID_TIMDRIVE, TIMERDRV_CMD_START, (char *)req);
 }
 
 int command_main(int argc, char *argv[])
@@ -56,19 +50,18 @@ int command_main(int argc, char *argv[])
 
     /* コンソールカラン受信文字列を受け取る*/
     kz_recv(MSGBOX_ID_CONSINPUT, &size, &p);
+    if (p == NULL) {
+      send_write("expired.\n");
+      continue;
+    }
     p[size] = '\0';
 
     if (!strncmp(p, "echo", 4)) { /* echo コマンド */
       send_write(p + 4);
       send_write("\n");
     } else if (!strncmp(p, "timer", 5)) { /* タイマ起動コマンド */
-      softvec_setintr(SOFTVEC_TYPE_TIMINTR, timer_intr);
-      puts("start timer.\n");
-      timer_start(0, 3000);
-      timer_start(1, 4500);
-    } else if (!strncmp(p, "cancel", 6)) {  /* タイマキャンセル */
-      puts("cancel timer.\n");
-      timer_cancel(0);
+      send_write("timer start.\n");
+      send_start(1000);
     } else {
       send_write("unknown.\n");
     }

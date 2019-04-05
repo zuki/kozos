@@ -3,6 +3,7 @@
 
 #define NULL ((void *) 0)         /* NULLポインタ定義         */
 #define SERIAL_DEFAULT_DEVICE 1   /* 標準シリアルデバイス番号 */
+#define TIMER_DEFAULT_DEVICE  1   /* 標準タイマチャネル番号   */
 
 typedef unsigned char   uint8;
 typedef unsigned short  uint16;
@@ -15,7 +16,9 @@ typedef void (*kz_handler_t)(void);                 /* 割込みハンドラの�
 typedef enum {
   MSGBOX_ID_CONSINPUT = 0,
   MSGBOX_ID_CONSOUTPUT,
-  MSGBOX_ID_NUM,
+  MSGBOX_ID_TIMDRIVE,
+  MSGBOX_ID_TIMEXPIRE,
+  MSGBOX_ID_NUM
 } kz_msgbox_id_t;
 
 #endif

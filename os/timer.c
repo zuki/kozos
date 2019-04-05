@@ -2,6 +2,7 @@
 #include "timer.h"
 
 #define TIMER_TMR_NUM 2
+
 #define H8_3069F_TMR01  ((volatile struct h8_3069f_tmr *)0xffff80)
 #define H8_3069F_TMR23  ((volatile struct h8_3069f_tmr *)0xffff90)
 
@@ -52,12 +53,19 @@ static struct {
 };
 
 /* タイマ開始 */
-int timer_start(int index, int msec)
+int timer_start(int index, int msec, int flags)
 {
   volatile struct h8_3069f_tmr *tmr = regs[index].tmr;
-  int count;
+  int   count;
+  uint8 tcr;
 
-  tmr->tcr0 = H8_3069F_TMR_TCR_OVF | H8_3096F_TMR_TCR_CCLR_CLRCMFA;
+  tcr = H8_3069F_TMR_TCR_OVF;
+  if (flags & TIMER_START_FLAG_CYCLE)
+    tcr |= H8_3096F_TMR_TCR_CCLR_CLRCMFA;
+  else
+    tcr |= H8_3096F_TMR_TCR_CCLR_DISCLR;
+
+  tmr->tcr0 = tcr;
   tmr->tcr1 = H8_3069F_TMR_TCR_CLK8192 | H8_3096F_TMR_TCR_CCLR_DISCLR;
 
   tmr->tcsr0 = 0;
@@ -102,4 +110,28 @@ int timer_cancel(int index)
   tmr->tcr0 &= ~H8_3096F_TMR_TCR_CMIEA;   /* 割込み無効化 */
 
   return 0;
+}
+
+/* タイマ動作中か？ */
+int timer_is_running(int index)
+{
+    volatile struct h8_3069f_tmr *tmr = regs[index].tmr;
+    return (tmr->tcr0 & H8_3096F_TMR_TCR_CMIEA) ? 1 : 0;
+}
+
+/* タイマの現在値 */
+int timer_gettime(int index)
+{
+  volatile struct h8_3069f_tmr *tmr = regs[index].tmr;
+  volatile int count;
+  int msec;
+
+  /*
+   * 周期タイマの場合は動作中かどうかのチェックの直後にタイマ満了すると
+   * カウンタがセロに初期化されてしまうので、前もって値を取得しておく。
+   */
+  count = tmr->tcnt;
+  msec = count * 2 / 5; /* 20MHz: (count * 8192 * 1000 / 200000000) */
+
+  return timer_is_running(index) ? msec : -1;
 }

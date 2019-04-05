@@ -35,8 +35,10 @@ void kz_srvcall(kz_syscall_type_t type, kz_syscall_param_t *param);
 
 /* システムタスク */
 int consdrv_main(int argc, char *argv[]);
+int timerdrv_main(int argc, char *argv[]);
 
 /* ユーザタスク */
 int command_main(int argc, char *argv[]);
+int clock_main(int argc, char *argv[]);
 
 #endif
