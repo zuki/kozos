@@ -64,7 +64,7 @@ int serial_init(int index)
 
   sci->scr = 0;
   sci->smr = 0;
-  sci->brr = 64;      /* 20MHzのクロックから9600bpsを生成 */
+  sci->brr = 15;      /* 20MHzのクロックから38400bpsを生成 */
   sci->scr = H8_3069F_SCI_SCR_RE | H8_3069F_SCI_SCR_TE;   /* 送受信可能 */
   sci->ssr = 0;
 
