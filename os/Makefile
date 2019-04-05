@@ -14,7 +14,7 @@ RANLIB  = $(BINDIR)/$(ADDNAME)ranlib
 STRIP   = $(BINDIR)/$(ADDNAME)strip
 
 OBJS    = startup.o main.o interrupt.o
-OBJS   += lib.o serial.o
+OBJS   += lib.o serial.o timer.o
 
 # sources of kozos
 OBJS	+= kozos.o syscall.o memory.o consdrv.o command.o
