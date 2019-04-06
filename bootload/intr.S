@@ -105,3 +105,29 @@ _intr_timintr:
     mov.l   @er7+,er5
     mov.l   @er7+,er6
     rte
+
+    .global _intr_ethintr
+    .type   _intr_ethintr,@function
+_intr_ethintr:
+    mov.l   er6,@-er7
+    mov.l   er5,@-er7
+    mov.l   er4,@-er7
+    mov.l   er3,@-er7
+    mov.l   er2,@-er7
+    mov.l   er1,@-er7
+    mov.l   er0,@-er7
+    mov.l   er7,er1
+    mov.l   #_intrstack,sp
+    mov.l   er1,@-er7
+    mov.w   #SOFTVEC_TYPE_ETHINTR,r0
+    jsr     @_interrupt
+    mov.l   @er7+,er1
+    mov.l   er1,er7
+    mov.l   @er7+,er0
+    mov.l   @er7+,er1
+    mov.l   @er7+,er2
+    mov.l   @er7+,er3
+    mov.l   @er7+,er4
+    mov.l   @er7+,er5
+    mov.l   @er7+,er6
+    rte
