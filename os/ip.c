@@ -232,7 +232,7 @@ int ip_main(int argc, char *argv[])
     size = ethernet_proc(size, (struct ethernet_header *)p);
     puts("received: 0x");
     putxval(size, 0);
-    puts("bytes\n");
+    puts(" bytes\n");
     if (size > 0) {
       send_send(size, p);
       puts("replyed.\n");
