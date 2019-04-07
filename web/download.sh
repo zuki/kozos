@@ -10,7 +10,7 @@ fi
 
 bootload_files="defines.h dram.c dram.h elf.c elf.h interrupt.c interrupt.h intr.S intr.h lib.c lib.h main.c serial.c serial.h srec.c srec.h startup.s vector.c xmodem.c xmodem.h Makefile ld.scr"
 
-os_files="command.c consdrv.c consdrv.h defines.h  ether.c ether.h etherdrv.c etherdrv.h interrupt.c interrupt.h intr.h ip.c kozos.c kozos.h lib.c lib.h main.c serial.c serial.h startup.s syscall.c syscall.h timer.c timer.h timerdrv.c timerdrv.h Makefile ld.scr"
+os_files="arp.c arp.h clock.c command.c consdrv.c consdrv.h defines.h  ethernet.c ethernet.h icmp.c icmp.h interrupt.c interrupt.h intr.s intr.h ip.c ip.h kozos.c kozos.h ld.scr lib.c lib.h main.c memory.c memory.h netdrv.c netdrv.h rtl8019.c rtl8019.h serial.c serial.h startup.s syscall.c syscall.h timer.c timer.h timerdrv.c timerdrv.h vector.c Makefile"
 
 ( cd $1/bootload;
   for f in $bootload_files; do
