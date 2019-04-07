@@ -14,11 +14,12 @@ RANLIB  = $(BINDIR)/$(ADDNAME)ranlib
 STRIP   = $(BINDIR)/$(ADDNAME)strip
 
 OBJS    = startup.o main.o interrupt.o
-OBJS   += lib.o serial.o timer.o ether.o
+OBJS   += lib.o serial.o timer.o rtl8019.o
 
 # sources of kozos
-OBJS	+= kozos.o syscall.o memory.o command.o clock.o ip.o
-OBJS	+= consdrv.o timerdrv.o etherdrv.o
+OBJS	+= kozos.o syscall.o memory.o command.o clock.o
+OBJS    += ethernet.o arp.o ip.o icmp.o
+OBJS	+= consdrv.o timerdrv.o netdrv.o
 
 TARGET  = kozos
 
@@ -32,8 +33,8 @@ CFLAGS += -DKOZOS
 LFLAGS = -static -T ld.scr -L.
 
 .SUFFIXES:	.c .o
-.SUFFIXEs:	.s .o
-.SUFFIXEs:	.S .o
+.SUFFIXES:	.s .o
+.SUFFIXES:	.S .o
 
 all:		$(TARGET)
 

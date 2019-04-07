@@ -29,18 +29,21 @@ int kx_send(kz_msgbox_id_t id, int size, char *p);
 /* ライブラリ関数 */
 void kz_start(kz_func_t func, char *name, int priority, int stacksize,
               int argc, char *argv[]);
-void kz_sysdown(void);
+void kz_sysdown(char *);
 void kz_syscall(kz_syscall_type_t type, kz_syscall_param_t *param);
 void kz_srvcall(kz_syscall_type_t type, kz_syscall_param_t *param);
 
 /* システムタスク */
 int consdrv_main(int argc, char *argv[]);
 int timerdrv_main(int argc, char *argv[]);
-int etherdrv_main(int argc, char *argv[]);
+int netdrv_main(int argc, char *argv[]);
 
 /* ユーザタスク */
 int command_main(int argc, char *argv[]);
 int clock_main(int argc, char *argv[]);
+int ethernet_main(int argc, char *argv[]);
+int arp_main(int argc, char *argv[]);
 int ip_main(int argc, char *argv[]);
+int icmp_main(int argc, char *argv[]);
 
 #endif

@@ -1,71 +1,35 @@
 #include "defines.h"
 #include "kozos.h"
-#include "ether.h"
-#include "etherdrv.h"
+#include "netdrv.h"
+#include "ethernet.h"
+#include "arp.h"
+#include "ip.h"
 #include "lib.h"
-
-uint32 network_id;
-
-#define MACADDR "\x00\x11\x22\x33\x44\x55"
-#define IPADDR  0xc0a80b0b  /* 192.168.11.11 */
-static uint32 ipaddr = IPADDR;
-
-#define MACADDR_SIZE  6
-#define IPADDR_SIZE   4
-
-#define ETHERNET_HEADER_SIZE  14
-
-struct ethernet_header {
-  uint8 dst_addr[MACADDR_SIZE];
-  uint8 src_addr[MACADDR_SIZE];
-  uint16 type;
-#define ETHERNET_TYPE_IP  0x0800
-#define ETHERNET_TYPE_ARP 0x0806
-};
-
-struct arp_header {
-  uint16 hardware;
-#define ARP_HARDWARE_ETHER  1
-  uint16 protocol;
-  uint8  hardware_addr_size;
-  uint8  protocol_addr_size;
-  uint16 operation;
-#define ARP_OPERATION_REQUEST 1
-#define ARP_OPERATION_REPLY   2
-
-  uint8  sender_hardware_addr[MACADDR_SIZE];
-  uint8  sender_protocol_addr[IPADDR_SIZE];
-  uint8  target_hardware_addr[MACADDR_SIZE];
-  uint8  target_protocol_addr[IPADDR_SIZE];
-};
 
 struct ip_header {
   uint8  v_hl;
   uint8  tos;
-  uint16 total_length;
+  uint16 length; /* IPヘッダ以降のパケットサイズ(IPヘッダを含む) */
   uint16 id;
   uint16 fragment;
   uint8  ttl;
   uint8  protocol;
-#define IP_PROTOCOL_ICMP  1
-#define IP_PROTOCOL_TCP   6
-#define IP_PROTOCOL_UDP  17
-
   uint16 checksum;
-  uint8  src_addr[IPADDR_SIZE];
-  uint8  dst_addr[IPADDR_SIZE];
+  uint32 src_addr;
+  uint32 dst_addr;
 };
 
-struct icmp_header {
-  uint8  type;
-#define ICMP_TYPE_REPLY   0
-#define ICMP_TYPE_REQUEST 8
+#define IPADDR  0xc0a80b0b   /* 192.168.11.11 */
+static uint32 my_ipaddr = IPADDR;
 
-  uint8  code;
-  uint16 checksum;
-};
+#define PROTOCOL_MAXNUM IP_PROTOCOL_UDP   /* UDPまで利用可能 */
 
-static uint16 calc_checksum(int size, void *buf)
+struct protoinfo {
+  unsigned char cmd;
+  kz_msgbox_id_t id;
+} protoinfo[PROTOCOL_MAXNUM + 1];
+
+uint16 ip_calc_checksum(int size, void *buf)
 {
   int i;
   uint16 val;
@@ -87,159 +51,110 @@ static uint16 calc_checksum(int size, void *buf)
   return ~sum & 0xffff;
 }
 
-static int icmp_proc(int size, struct icmp_header *hdr)
+static int ip_recv(struct netbuf *pkt)
 {
+  struct ip_header *iphdr;
+  int hdrlen;
+
+  iphdr = (struct ip_header *)pkt->top;
+
+  if (((iphdr->v_hl >> 4) & 0xf) != 4)
+    return 0;
+  if (iphdr->dst_addr != my_ipaddr)
+    return 0;
+  if (iphdr->protocol > PROTOCOL_MAXNUM) /* 未サポートのプロトコル */
+    return 0;
+  if (!protoinfo[iphdr->protocol].id) /* 登録されていないプロトコル */
+    return 0;
+
+  hdrlen = (iphdr->v_hl & 0xf) << 2;
+
+  if (pkt->size > iphdr->length)
+    pkt->size = iphdr->length;
+
+  pkt->top  += hdrlen;
+  pkt->size -= hdrlen;
+
+  pkt->cmd = protoinfo[iphdr->protocol].cmd;
+  pkt->option.common.ipaddr.addr = iphdr->src_addr;
+  kz_send(protoinfo[iphdr->protocol].id, 0, (char *)pkt);
+  return 1;
+}
+
+static int ip_send(struct netbuf *pkt)
+{
+  struct ip_header *iphdr;
+  static int id = 0;
+  int hdrlen;
+
+  hdrlen = sizeof(struct ip_header);
+
+  pkt->top  -= hdrlen;
+  pkt->size += hdrlen;
+
+  iphdr = (struct ip_header *)pkt->top;
+
+  iphdr->v_hl     = (4 << 4) | (hdrlen >> 2);
+  iphdr->tos      = 0;
+  iphdr->length   = pkt->size;
+  iphdr->id       = id++;
+  iphdr->fragment = 0;
+  iphdr->ttl      = 64;
+  iphdr->protocol = pkt->option.ip.send.protocol;
+
+  iphdr->src_addr = my_ipaddr;
+  iphdr->dst_addr = pkt->option.ip.send.dst_addr;
+
+  iphdr->checksum = 0;
+  iphdr->checksum = ip_calc_checksum(hdrlen, iphdr);
+
+  pkt->cmd = ETHERNET_CMD_SEND;
+  memset(pkt->option.ethernet.send.dst_macaddr, 0, MACADDR_SIZE);
+  pkt->option.ethernet.send.type = ETHERNET_TYPE_IP;
+  pkt->option.ethernet.send.dst_ipaddr = iphdr->dst_addr;
+  kz_send(MSGBOX_ID_ETHPROC, 0, (char *)pkt);
+
+  return 1;
+}
+
+static int ip_proc(struct netbuf *buf)
+{
+  struct protoinfo *info;
   int ret = 0;
 
-  switch (hdr->type) {
-    case ICMP_TYPE_REQUEST:
-      hdr->type = ICMP_TYPE_REPLY;
-      hdr->checksum = 0;
-      hdr->checksum = calc_checksum(size, hdr);
-      ret = size;
+  switch (buf->cmd) {
+    case IP_CMD_REGPROTO:
+      info = &protoinfo[buf->option.ip.regproto.protocol];
+      info->cmd = buf->option.ip.regproto.cmd;
+      info->id  = buf->option.ip.regproto.id;
+      break;
+    case IP_CMD_RECV:
+      ret = ip_recv(buf);
+      break;
+    case IP_CMD_SEND:
+      ret = ip_send(buf);
       break;
     default:
       break;
   }
 
   return ret;
-}
-
-static int ip_proc(int size, struct ip_header *hdr)
-{
-  int ret = 0, hdrlen, nextsize;
-  void *nexthdr;
-
-  if (((hdr->v_hl >> 4) & 0xf) != 4)
-    return 0;
-  if (memcmp(hdr->dst_addr, &ipaddr, IPADDR_SIZE))
-    return 0;
-
-  hdrlen = (hdr->v_hl & 0xf) << 2;
-
-  if (size > hdr->total_length)
-    size = hdr->total_length;
-
-  nextsize = size - hdrlen;
-  nexthdr  = (char *)hdr + hdrlen;
-
-  switch (hdr->protocol) {
-    case IP_PROTOCOL_ICMP:
-      ret = icmp_proc(nextsize, nexthdr);
-      break;
-    default:
-      break;
-  }
-
-  if (ret > 0) {
-    memcpy(hdr->dst_addr, hdr->src_addr, IPADDR_SIZE);
-    memcpy(hdr->src_addr, &ipaddr, IPADDR_SIZE);
-    hdr->checksum = 0;
-    hdr->checksum = calc_checksum(hdrlen, hdr);
-    ret += hdrlen;
-  }
-
-  return ret;
-}
-
-static int arp_proc(int size, struct arp_header *hdr)
-{
-  int ret = 0;
-
-  if (hdr->hardware != ARP_HARDWARE_ETHER)
-    return 0;
-  if (hdr->protocol != ETHERNET_TYPE_IP)
-    return 0;
-
-  switch (hdr->operation) {
-    case ARP_OPERATION_REQUEST:
-      if (memcmp(hdr->target_protocol_addr, &ipaddr, IPADDR_SIZE))
-        break;
-      memcpy(hdr->target_hardware_addr, hdr->sender_hardware_addr, MACADDR_SIZE);
-      memcpy(hdr->target_protocol_addr, hdr->sender_protocol_addr, IPADDR_SIZE);
-      memcpy(hdr->sender_hardware_addr, MACADDR, MACADDR_SIZE);
-      memcpy(hdr->sender_protocol_addr, &ipaddr, IPADDR_SIZE);
-      hdr->operation = ARP_OPERATION_REPLY;
-      ret = size;
-      break;
-    default:
-      break;
-  }
-
-  return ret;
-}
-
-static int ethernet_proc(int size, struct ethernet_header *hdr)
-{
-  int ret = 0, nextsize;
-  void *nexthdr;
-
-  if (!(hdr->dst_addr[0] & 1) && memcmp(hdr->dst_addr, MACADDR, MACADDR_SIZE))
-    return 0;
-
-  nextsize = size - ETHERNET_HEADER_SIZE;
-  nexthdr = (char *)hdr + ETHERNET_HEADER_SIZE;
-
-  switch (hdr->type) {
-    case ETHERNET_TYPE_ARP:
-      ret = arp_proc(nextsize, nexthdr);
-      break;
-    case ETHERNET_TYPE_IP:
-      ret = ip_proc(nextsize, nexthdr);
-      break;
-    default:
-      break;
-  }
-
-  if (ret > 0) {
-    memcpy(hdr->dst_addr, hdr->src_addr, MACADDR_SIZE);
-    memcpy(hdr->src_addr, MACADDR, MACADDR_SIZE);
-    ret += ETHERNET_HEADER_SIZE;
-  }
-
-  return ret;
-}
-
-static void send_use(void)
-{
-  char *p;
-
-  p = kz_kmalloc(1);
-  p[0] = ETHERDRV_CMD_USE;
-  kz_send(MSGBOX_ID_ETHOUTPUT, 1, p);
-}
-
-static void send_send(int size, char *buf)
-{
-  char *p;
-
-  p = kz_kmalloc(size + 1);
-  p[0] = ETHERDRV_CMD_SEND;
-  memcpy(&p[1], buf, size);
-  kz_send(MSGBOX_ID_ETHOUTPUT, size + 1, p);
 }
 
 int ip_main(int argc, char *argv[])
 {
-  char *p;
-  int size;
+  struct netbuf *buf;
+  int ret;
 
-  send_use();
-  puts("network ready.\n");
+  buf = kz_kmalloc(sizeof(*buf));
+  buf->cmd = ARP_CMD_IPADDR;
+  buf->option.common.ipaddr.addr = IPADDR;
+  kz_send(MSGBOX_ID_ARPPROC, 0, (char *)buf);
 
   while (1) {
-    kz_recv(MSGBOX_ID_ETHINPUT, &size, &p);
-    size = ethernet_proc(size, (struct ethernet_header *)p);
-    puts("received: 0x");
-    putxval(size, 0);
-    puts(" bytes\n");
-    if (size > 0) {
-      send_send(size, p);
-      puts("replyed.\n");
-    } else {
-      puts("no reply.\n");
-    }
-    kz_kmfree(p);
+    kz_recv(MSGBOX_ID_IPPROC, NULL, (char **)&buf);
+    ret = ip_proc(buf);
+    if (!ret) kz_kmfree(buf);
   }
 
   return 0;

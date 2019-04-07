@@ -2,6 +2,8 @@
 #include "kozos.h"
 #include "consdrv.h"
 #include "timerdrv.h"
+#include "netdrv.h"
+#include "icmp.h"
 #include "lib.h"
 
 /* コンソールドライバの使用開始をコンソールドライバに依頼する */
@@ -38,6 +40,18 @@ static void send_start(int msec)
   kz_send(MSGBOX_ID_TIMDRIVE, TIMERDRV_CMD_START, (char *)req);
 }
 
+/* pingの開始をicmpタスクに依頼する */
+static void send_icmp()
+{
+  struct netbuf *buf;
+
+  buf = kz_kmalloc(sizeof(*buf));
+  buf->cmd = ICMP_CMD_SEND;
+  buf->option.icmp.send.number = 3;
+  buf->option.icmp.send.ipaddr = 0xc0a80b07;  /* 192.167.11.7 */
+  kz_send(MSGBOX_ID_ICMPPROC, 0, (char *)buf);
+}
+
 int command_main(int argc, char *argv[])
 {
   char *p;
@@ -62,6 +76,9 @@ int command_main(int argc, char *argv[])
     } else if (!strncmp(p, "timer", 5)) { /* タイマ起動コマンド */
       send_write("timer start.\n");
       send_start(1000);
+    } else if (!strncmp(p, "ping", 4)) { /* pingコマンド */
+      send_write("ping start.\n");
+      send_icmp();
     } else {
       send_write("unknown.\n");
     }

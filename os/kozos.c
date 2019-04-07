@@ -6,7 +6,7 @@
 #include "memory.h"
 #include "lib.h"
 
-#define THREAD_NUM         6
+#define THREAD_NUM        16
 #define PRIORITY_NUM      16
 #define THREAD_NAME_SIZE  15
 
@@ -278,7 +278,7 @@ static void sendmsg(kz_msgbox *mboxp, kz_thread *thp, int size, char *p)
   /* メッセージバッファの作成 */
   mp = (kz_msgbuf *)kzmem_alloc(sizeof(*mp));
   if (mp == NULL)
-    kz_sysdown();
+    kz_sysdown("sendmsg");
   mp->next        = NULL;
   mp->sender      = thp;
   mp->param.size  = size;
@@ -345,7 +345,7 @@ static kz_thread_id_t thread_recv(kz_msgbox_id_t id, int *sizep, char **pp)
   kz_msgbox *mboxp = &msgboxes[id];
 
   if (mboxp->receiver)  /* 他のスレッドがすでに受信待ちしている */
-    kz_sysdown();
+    kz_sysdown("thread_recv");
 
   mboxp->receiver = current;  /* 受信待ちスレッドに設定 */
 
@@ -400,7 +400,7 @@ static void call_functions(kz_syscall_type_t type, kz_syscall_param_t *p)
     case KZ_SYSCALL_TYPE_SLEEP:   /* kz_sleep() */
       p->un.sleep.ret = thread_sleep();
       break;
-    case KZ_SYSCALL_TYPE_WAKEUP:  /* kz_wakup() */
+    case KZ_SYSCALL_TYPE_WAKEUP:  /* kz_wakeup() */
       p->un.wakeup.ret = thread_wakeup(p->un.wakeup.id);
       break;
     case KZ_SYSCALL_TYPE_GETID:   /* kz_getid() */
@@ -474,7 +474,7 @@ static void schedule(void)
       break;
   }
   if (i == PRIORITY_NUM) /* 見つからなかった */
-    kz_sysdown();
+    kz_sysdown("schedule");
 
   current = readyque[i].head;  /* カレントスレッドに設定する */
 }
@@ -489,7 +489,7 @@ static void softerr_intr(void)
   puts(current->name);
   puts(" DOWN.\n");
   getcurrent();   /* レディキューから外す */
-  thread_exit();  /*スレッドを終了する */
+  thread_exit();  /* スレッドを終了する */
 }
 
 /* 割込み処理の入り口関数 */
@@ -548,9 +548,10 @@ void kz_start(kz_func_t func, char *name, int priority, int stacksize,
   /* ここには返ってこない */
 }
 
-void kz_sysdown(void)
+void kz_sysdown(char *caller)
 {
-  puts("system error!\n");
+  puts(caller);
+  puts(": system error!\n");
   while (1)
     ;
 }

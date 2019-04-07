@@ -72,7 +72,7 @@ void *kzmem_alloc(int size)
     p = &pool[i];
     if (size <= p->size - sizeof(kzmem_block)) {
       if (p->free == NULL) {  /* 解放済み領域がない（メモリブロック不足） */
-        kz_sysdown();
+        kz_sysdown("kzmem_alloc_1");
         return NULL;
       }
       /* 解放済みリンクリスタから領域を取得する */
@@ -89,7 +89,7 @@ void *kzmem_alloc(int size)
   }
 
   /* 指定されたサイズの領域を格納できるメモリプールがない */
-  kz_sysdown();
+  kz_sysdown("kzmem_alloc_2");
   return NULL;
 }
 
@@ -113,5 +113,5 @@ void kzmem_free(void *mem)
     }
   }
 
-  kz_sysdown();
+  kz_sysdown("kz_sysdown");
 }

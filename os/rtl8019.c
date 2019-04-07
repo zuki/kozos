@@ -1,6 +1,6 @@
 #include "defines.h"
 #include "lib.h"
-#include "ether.h"
+#include "ethernet.h"
 
 /* I/O関係レジスタ定義 */
 #define H8_3069F_P1DDR   ((volatile uint8 *)0xfee000)
@@ -175,11 +175,10 @@ static int port_init(void)
   return 0;
 }
 
-int ether_init(int index)
+int rtl8019_init(int index, unsigned char macaddr[])
 {
   unsigned char t1;
   unsigned char t2[12];
-  unsigned char macaddr[6];
   int i;
 
   port_init();
@@ -244,19 +243,19 @@ int ether_init(int index)
   return 0;
 }
 
-void ether_intr_enable(int index)
+void rtl8019_intr_enable(int index)
 {
   *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
   *NE2000_IMR = 0x01;
 }
 
-void ether_intr_disable(int index)
+void rtl8019_intr_disable(int index)
 {
   *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STP;
   *NE2000_IMR = 0x00;
 }
 
-int ether_checkintr(int index)
+int rtl8019_checkintr(int index)
 {
   unsigned char status;
 
@@ -265,9 +264,9 @@ int ether_checkintr(int index)
   return (status & 0x01) ? 1 : 0;
 }
 
-static int clear_irq(int index)
+int rtl8019_clearintr(int index)
 {
-  if (ether_checkintr(index)) {
+  if (rtl8019_checkintr(index)) {
     *H8_3069F_ISR = 0x00;
     *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
     *NE2000_ISR   = 0xff;
@@ -275,7 +274,7 @@ static int clear_irq(int index)
   return 0;
 }
 
-int ether_recv(int index, char *buf)
+int rtl8019_recv(int index, char *buf)
 {
   unsigned char start, curr;
   unsigned char header[4];
@@ -304,12 +303,10 @@ int ether_recv(int index, char *buf)
     header[1] = NE2000_RP_STOP;
   *NE2000_BNRY = header[1] - 1;
 
-  clear_irq(index);
-
   return size;
 }
 
-int ether_send(int index, int size, char *buf)
+int rtl8019_send(int index, int size, char *buf)
 {
   write_data(NE2000_TP_START * 256, size, buf);
 
