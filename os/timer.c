@@ -28,14 +28,14 @@ struct h8_3069f_tmr {
 #define H8_3069F_TMR_TCR_CLKDOWN      (6<<0)
 #define H8_3069F_TMR_TCR_CLKBOTH      (7<<0)
 
-#define H8_3096F_TMR_TCR_CCLR_DISCLR  (0<<3)
-#define H8_3096F_TMR_TCR_CCLR_CLRCMFA (1<<3)
-#define H8_3096F_TMR_TCR_CCLR_CLRCMFB (2<<3)
-#define H8_3096F_TMR_TCR_CCLR_DISINPB (3<<3)
+#define H8_3069F_TMR_TCR_CCLR_DISCLR  (0<<3)
+#define H8_3069F_TMR_TCR_CCLR_CLRCMFA (1<<3)
+#define H8_3069F_TMR_TCR_CCLR_CLRCMFB (2<<3)
+#define H8_3069F_TMR_TCR_CCLR_DISINPB (3<<3)
 
-#define H8_3096F_TMR_TCR_OVIE         (1<<5)
-#define H8_3096F_TMR_TCR_CMIEA        (1<<6)
-#define H8_3096F_TMR_TCR_CMIEB        (1<<7)
+#define H8_3069F_TMR_TCR_OVIE         (1<<5)
+#define H8_3069F_TMR_TCR_CMIEA        (1<<6)
+#define H8_3069F_TMR_TCR_CMIEB        (1<<7)
 
 #define H8_3069F_TMR_TCSR_OS_NOACT    (0<<0)
 #define H8_3069F_TMR_TCSR_OIS_NOACT   (0<<2)
@@ -61,12 +61,12 @@ int timer_start(int index, int msec, int flags)
 
   tcr = H8_3069F_TMR_TCR_OVF;
   if (flags & TIMER_START_FLAG_CYCLE)
-    tcr |= H8_3096F_TMR_TCR_CCLR_CLRCMFA;
+    tcr |= H8_3069F_TMR_TCR_CCLR_CLRCMFA;
   else
-    tcr |= H8_3096F_TMR_TCR_CCLR_DISCLR;
+    tcr |= H8_3069F_TMR_TCR_CCLR_DISCLR;
 
   tmr->tcr0 = tcr;
-  tmr->tcr1 = H8_3069F_TMR_TCR_CLK8192 | H8_3096F_TMR_TCR_CCLR_DISCLR;
+  tmr->tcr1 = H8_3069F_TMR_TCR_CLK8192 | H8_3069F_TMR_TCR_CCLR_DISCLR;
 
   tmr->tcsr0 = 0;
   tmr->tcsr1 = 0;
@@ -75,7 +75,7 @@ int timer_start(int index, int msec, int flags)
 
   tmr->tcnt = 0;
   tmr->tcora0 = count;
-  tmr->tcr0 |= H8_3096F_TMR_TCR_CMIEA;    /* 割込み有効化 */
+  tmr->tcr0 |= H8_3069F_TMR_TCR_CMIEA;    /* 割込み有効化 */
 
   return 0;
 }
@@ -107,7 +107,7 @@ int timer_cancel(int index)
   tmr->tcr0 = 0;
   tmr->tcr1 = 0;
 
-  tmr->tcr0 &= ~H8_3096F_TMR_TCR_CMIEA;   /* 割込み無効化 */
+  tmr->tcr0 &= ~H8_3069F_TMR_TCR_CMIEA;   /* 割込み無効化 */
 
   return 0;
 }
@@ -116,7 +116,7 @@ int timer_cancel(int index)
 int timer_is_running(int index)
 {
     volatile struct h8_3069f_tmr *tmr = regs[index].tmr;
-    return (tmr->tcr0 & H8_3096F_TMR_TCR_CMIEA) ? 1 : 0;
+    return (tmr->tcr0 & H8_3069F_TMR_TCR_CMIEA) ? 1 : 0;
 }
 
 /* タイマの現在値 */
