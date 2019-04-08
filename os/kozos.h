@@ -45,5 +45,6 @@ int ethernet_main(int argc, char *argv[]);
 int arp_main(int argc, char *argv[]);
 int ip_main(int argc, char *argv[]);
 int icmp_main(int argc, char *argv[]);
-
+int tcp_main(int argc, char *argv[]);
+int httpd_main(int argc, char *argv[]);
 #endif

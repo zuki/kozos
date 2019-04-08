@@ -21,6 +21,7 @@
 struct netbuf {
   unsigned char cmd;
   short size;
+  struct netbuf *next;
 
   union {
     union {
@@ -55,6 +56,26 @@ struct netbuf {
         uint32 ipaddr;
       } send;
     } icmp;
+    union {
+      struct {
+        uint16 port;
+        kz_msgbox_id_t id;
+      } accept;
+      struct {
+        uint16 port;
+        uint32 ipaddr;
+        kz_msgbox_id_t id;
+      } connect;
+      struct {
+        int number;
+      } establish;
+      struct {
+        int number;
+      } close;
+      struct {
+        int number;
+      } send;
+    } tcp;
   } option;
 
   /*

@@ -19,6 +19,15 @@ void *memcpy(void *dst, const void *src, long len)
   return dst;
 }
 
+void *memmove(void *dst, const void *src, long len)
+{
+  char *d = dst;
+  const char *s = src;
+  for (; len > 0; len--)
+    *(d++) = *(s++);
+  return dst;
+}
+
 int memcmp(const void *b1, const void *b2, long len)
 {
   const char *p1 = b1, *p2 = b2;
@@ -70,6 +79,17 @@ int strncmp(const char *s1, const char *s2, int len)
     len--;
   }
   return 0;
+}
+
+char *strchr(char *s, int c)
+{
+  unsigned char *p = s;
+  while (*p) {
+    if (*p == c)
+      return p;
+    p++;
+  }
+  return NULL;
 }
 
 /* 一文字送信 */
