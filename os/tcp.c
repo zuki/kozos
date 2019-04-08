@@ -123,6 +123,26 @@ static struct connection *tcp_delete_connection(int number)
   return ret;
 }
 
+static int tcp_free_connection(struct connection *con)
+{
+  struct netbuf *buf, *next;
+
+  for (buf = con->send_queue; buf; buf = next) {
+    next = buf->next;
+    kz_kmfree(buf);
+  }
+
+  for (buf = con->recv_queue; buf; buf = next) {
+    next = buf->next;
+    kz_kmfree(buf);
+  }
+
+  memset(con, 0, sizeof(*con));
+  kz_kmfree(con);
+
+  return 0;
+}
+
 static uint16 tcp_calc_pseudosum(uint32 src_ipaddr, uint32 dst_ipaddr,
   uint8 protocol, uint16 size)
 {
@@ -160,6 +180,10 @@ static int tcp_sendpkt(struct netbuf *pkt, struct connection *con)
   } else if (tcphdr->flags &
     (TCP_HEADER_FLAG_SYN|TCP_HEADER_FLAG_FIN)) {
       size = 1;
+  }
+
+  if ((tcphdr->flags & TCP_HEADER_FLAG_FINACK) == TCP_HEADER_FLAG_FINACK) {
+    con->status = TCP_CONNECTION_STATUS_FINWAIT1;
   }
 
   tcphdr->checksum = tcp_calc_pseudosum(con->src_ipaddr,
@@ -369,7 +393,7 @@ static int tcp_recv_close(struct netbuf *pkt,
     kz_send(con->id, 0, (char *)buf);
 
     con = tcp_delete_connection(con->number);
-    kz_kmfree(con);
+    tcp_free_connection(con);
 
     return 1;
   }
@@ -461,7 +485,8 @@ static int tcp_recv(struct netbuf *pkt)
     kz_send(con->id, 0, (char *)buf);
 
     con = tcp_delete_connection(con->number);
-    kz_kmfree(con);
+    tcp_free_connection(con);
+
     return 0;
   }
 
@@ -566,7 +591,6 @@ static int tcp_proc(struct netbuf *buf)
 
       /* FINを送信 */
       tcp_send_enqueue(con, TCP_HEADER_FLAG_FINACK, 1460, 0, 0, 0, NULL);
-      con->status = TCP_CONNECTION_STATUS_FINWAIT1;
       break;
 
     case TCP_CMD_RECV:

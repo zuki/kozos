@@ -50,7 +50,7 @@ static int netdrv_proc(struct netbuf *buf)
 {
   switch (buf->cmd) {
     case NETDRV_CMD_USE:  /* イーサネットドライバの使用開始 */
-      rtl8019_init(0, my_macaddr);
+      /* rtl8019_init(0, my_macaddr); */ /* netdrv_init()で行っているので不要 */
       rtl8019_intr_enable(0); /* 受信割込み有効化（受信開始） */
       buf = kz_kmalloc(sizeof(*buf));
       buf->cmd = ETHERNET_CMD_MACADDR;
