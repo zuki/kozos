@@ -4,11 +4,11 @@ topページは取れるが、次のリンクが転送されない。topペー�
 
 ## 接続時のwiresharkキャプチャ画面
 
-![wireshark capture screen of extra-step 10](wireshark-step10.png)
+![wireshark capture screen of extra-step 10](wireshark-estep10.png)
 
 ## 移植編実装その9の時点でのキャプチャ画面
 
-![wireshark capture screen of extra-step 9](wireshark-step9.png)
+![wireshark capture screen of extra-step 9](wireshark-estep9.png)
 
 本ステップにおける修正文のうち、`tcp_recv_close()`該当部分を一部修正することで問題がなくなった。
 
