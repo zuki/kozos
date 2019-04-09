@@ -12,6 +12,7 @@ bootload_files="defines.h dram.c dram.h elf.c elf.h firmdata.scr interrupt.c int
 
 os_files="arp.c arp.h clock.c command.c consdrv.c consdrv.h defines.h  ethernet.c ethernet.h httpd.c icmp.c icmp.h interrupt.c interrupt.h intr.s intr.h ip.c ip.h kozos.c kozos.h ld.scr lib.c lib.h main.c memory.c memory.h netdrv.c netdrv.h rtl8019.c rtl8019.h serial.c serial.h startup.s syscall.c syscall.h tcp.c tcp.h timer.c timer.h timerdrv.c timerdrv.h vector.c Makefile"
 
+<<CONTENT
 ( cd $1/bootload;
   for f in $bootload_files; do
     wget $2/bootload/$f -O $f.euc
@@ -19,6 +20,7 @@ os_files="arp.c arp.h clock.c command.c consdrv.c consdrv.h defines.h  ethernet.
     rm $f.euc
   done
 )
+CONTENT
 
 ( cd $1/os;
   for f in $os_files; do
