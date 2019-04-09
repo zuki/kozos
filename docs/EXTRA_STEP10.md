@@ -10,7 +10,7 @@ topページは取れるが、次のリンクが転送されない。topペー�
 
 ![wireshark capture screen of extra-step 9](wireshark-estep9.png)
 
-本ステップにおける修正文のうち、`tcp_recv_close()`該当部分を一部修正することで問題がなくなった。
+本ステップにおける修正分のうち、`tcp_recv_close()`該当部分を一部修正することで問題がなくなった。
 
 ```diff
 $ diff -uw ../web/10/os/tcp.c tcp.c
