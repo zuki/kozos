@@ -23,8 +23,17 @@ void *memmove(void *dst, const void *src, long len)
 {
   char *d = dst;
   const char *s = src;
-  for (; len > 0; len--)
-    *(d++) = *(s++);
+
+  if (d < s) {
+    for (; len > 0; len--)
+      *(d++) = *(s++);
+  } else {
+    d += len;
+    s += len;
+    for (; len >0; len--)
+      *(--d) = *(--s);
+  }
+
   return dst;
 }
 

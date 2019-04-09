@@ -39,13 +39,14 @@ struct connection {
   uint32 dst_ipaddr;
   uint16 src_port;
   uint16 dst_port;
-  uint32 snd_number;
-  uint32 seq_number;
-  uint32 ack_number;
+  uint32 snd_number;  /* 自分がどこまで送信したか */
+  uint32 seq_number;  /* 相手がどこまで受信したか */
+  uint32 ack_number;  /* 自分がどこまで受信したか */
   enum {
     TCP_CONNECTION_STATUS_CLOSED,
     TCP_CONNECTION_STATUS_LISTEN,
-    TCP_CONNECTION_STATUS_SYNSENT,
+    TCP_CONNECTION_STATUS_SYNSENT1,
+    TCP_CONNECTION_STATUS_SYNSENT2,
     TCP_CONNECTION_STATUS_SYNRECV,
     TCP_CONNECTION_STATUS_ESTAB,
     TCP_CONNECTION_STATUS_FINWAIT1,
@@ -53,6 +54,7 @@ struct connection {
     TCP_CONNECTION_STATUS_CLOSEWAIT,
     TCP_CONNECTION_STATUS_LASTACK,
   } status;
+  struct netbuf *sending;
   struct netbuf *send_queue;
   struct netbuf **send_queue_end;
   struct netbuf *recv_queue;
@@ -127,6 +129,8 @@ static int tcp_free_connection(struct connection *con)
 {
   struct netbuf *buf, *next;
 
+  if (con->sending)
+    kz_kmfree(con->sending);
   for (buf = con->send_queue; buf; buf = next) {
     next = buf->next;
     kz_kmfree(buf);
@@ -161,6 +165,19 @@ static uint16 tcp_calc_pseudosum(uint32 src_ipaddr, uint32 dst_ipaddr,
   phdr.size       = size;
 
   return ~ip_calc_checksum(sizeof(phdr), &phdr);
+}
+
+static struct netbuf *tcp_copypkt(struct netbuf *pkt)
+{
+  struct netbuf *copypkt;
+
+  copypkt = kz_kmalloc(DEFAULT_NETBUF_SIZE);
+  memcpy(copypkt, pkt, DEFAULT_NETBUF_SIZE);
+
+  copypkt->next = NULL;
+  copypkt->top  = (char *)copypkt + (pkt->top - (char *)pkt);
+
+  return copypkt;
 }
 
 static int tcp_sendpkt(struct netbuf *pkt, struct connection *con)
@@ -267,6 +284,12 @@ static int tcp_send_flush(struct connection *con)
       if (!con->send_queue)
         con->send_queue_end = &(con->send_queue);
       pkt->next = NULL;
+
+      if (con->sending)
+        kz_kmfree(con->sending);
+      con->sending = pkt;
+      pkt = tcp_copypkt(pkt);
+
       tcp_sendpkt(pkt, con);
     }
   }
@@ -331,8 +354,7 @@ static int tcp_recv(struct netbuf *pkt)
   struct netbuf *buf;
   struct connection *con;
   struct tcp_header *tcphdr;
-  int new_status;
-  int closed = 0, ret = 0;
+  int opened = 0, closed = 0, ret = 0;
 
   tcphdr = (struct tcp_header *)pkt->top;
 
@@ -344,42 +366,40 @@ static int tcp_recv(struct netbuf *pkt)
 
   if (!con) return 0;
 
-  new_status = con->status;
-
   if (tcphdr->flags & TCP_HEADER_FLAG_RST) {
     closed++;
   }
 
   if (tcphdr->flags & TCP_HEADER_FLAG_ACK) {
-    /* ここで送信キューからパケットを削除する */
+    con->seq_number = tcphdr->ack_number;
+
+    /* 送信バッファからパケットを削除する */
+    if (con->snd_number == con->seq_number) {
+      if (con->sending) {
+        kz_kmfree(con->sending);
+        con->sending = NULL;
+      }
+    }
 
     /* データ送信に対してACKが返ってきたので、次のデータを送信する */
     if (con->status == TCP_CONNECTION_STATUS_ESTAB) {
-      con->seq_number = tcphdr->ack_number;
       tcp_send_flush(con);
     }
 
-    /* SYNSENT, SYNRECVならばESTABに */
-    if ((con->status == TCP_CONNECTION_STATUS_SYNSENT) ||
-        (con->status == TCP_CONNECTION_STATUS_SYNRECV)) {
-      con->seq_number = tcphdr->ack_number;
+    if (con->status == TCP_CONNECTION_STATUS_SYNSENT1) {
+      con->status = TCP_CONNECTION_STATUS_SYNSENT2;
+    }
 
-      /* セッション確立を上位タスクに通知 */
-      buf = kz_kmalloc(sizeof(*buf));
-      buf->cmd = TCP_CMD_ESTAB;
-      buf->option.tcp.establish.number = con->number;
-      kz_send(con->id, 0, (char *)buf);
-
-      new_status = TCP_CONNECTION_STATUS_ESTAB;
+    if (con->status == TCP_CONNECTION_STATUS_SYNRECV) {
+      con->status = TCP_CONNECTION_STATUS_ESTAB;
+      opened++;
     }
 
     if (con->status == TCP_CONNECTION_STATUS_FINWAIT1) {
-      con->seq_number = tcphdr->ack_number;
-      new_status = TCP_CONNECTION_STATUS_FINWAIT2;
+      con->status = TCP_CONNECTION_STATUS_FINWAIT2;
     }
 
     if (con->status == TCP_CONNECTION_STATUS_LASTACK) {
-      con->seq_number = tcphdr->ack_number;
       con->status = TCP_CONNECTION_STATUS_CLOSED;
       closed++;
     }
@@ -393,14 +413,16 @@ static int tcp_recv(struct netbuf *pkt)
       con->dst_port   = tcphdr->src_port;
       con->ack_number = tcphdr->seq_number + 1;
 
-      tcp_makesendpkt(con, TCP_HEADER_FLAG_SYNACK, 1460, 1460, 1, 0, NULL);
-      new_status = TCP_CONNECTION_STATUS_SYNRECV;
+      tcp_send_enqueue(con, TCP_HEADER_FLAG_SYNACK, 1460, 1460, 1, 0, NULL);
+      con->status = TCP_CONNECTION_STATUS_SYNRECV;
     }
 
     /* SYNSENTならばACKを返す（たぶんSYN+ACKが来ていている） */
-    if (con->status == TCP_CONNECTION_STATUS_SYNSENT) {
+    if (con->status == TCP_CONNECTION_STATUS_SYNSENT2) {
       con->ack_number = tcphdr->seq_number + 1;
       tcp_makesendpkt(con, TCP_HEADER_FLAG_ACK, 1460, 0, 0, 0, NULL);
+      opened++;
+      con->status = TCP_CONNECTION_STATUS_ESTAB;
     }
   }
 
@@ -409,15 +431,15 @@ static int tcp_recv(struct netbuf *pkt)
       if (con->status == TCP_CONNECTION_STATUS_FINWAIT2) {
         con->ack_number = tcphdr->seq_number + 1;
         tcp_makesendpkt(con, TCP_HEADER_FLAG_ACK, 1460, 0, 0, 0, NULL);
-        new_status = TCP_CONNECTION_STATUS_CLOSED;
+        con->status = TCP_CONNECTION_STATUS_CLOSED;
         closed++;
       } else {
       /* ESTABなら、Ack, FIN+ACK を返してLASTACKに遷移 */
         con->ack_number = tcphdr->seq_number + 1;
         tcp_makesendpkt(con, TCP_HEADER_FLAG_ACK, 1460, 0, 0, 0, NULL);
-        new_status = TCP_CONNECTION_STATUS_CLOSEWAIT;
-        tcp_makesendpkt(con, TCP_HEADER_FLAG_FINACK, 1460, 0, 0, 0, NULL);
-        new_status = TCP_CONNECTION_STATUS_LASTACK;
+        /* con->status = TCP_CONNECTION_STATUS_CLOSEWAIT; */
+        tcp_send_enqueue(con, TCP_HEADER_FLAG_FINACK, 1460, 0, 0, 0, NULL);
+        con->status = TCP_CONNECTION_STATUS_LASTACK;
     }
   }
 
@@ -432,7 +454,14 @@ static int tcp_recv(struct netbuf *pkt)
     }
   }
 
-  con->status = new_status;
+  if (opened) {
+    /* セッション確立を上位タスクに通知 */
+    buf = kz_kmalloc(sizeof(*buf));
+    buf->cmd = TCP_CMD_ESTAB;
+    buf->option.tcp.establish.number = con->number;
+    kz_send(con->id, 0, (char *)buf);
+  }
+
   if (closed) {
     /* セッション終了を上位タスクに通知 */
     buf = kz_kmalloc(sizeof(*buf));
@@ -480,6 +509,7 @@ static int tcp_proc(struct netbuf *buf)
       con->ack_number = 0;
       con->status     = TCP_CONNECTION_STATUS_LISTEN;
 
+      con->sending    = NULL;
       con->send_queue = NULL;
       con->recv_queue = NULL;
       con->send_queue_end = &con->send_queue;
@@ -502,8 +532,9 @@ static int tcp_proc(struct netbuf *buf)
       con->snd_number = 1;
       con->seq_number = 1;
       con->ack_number = 0;
-      con->status     = TCP_CONNECTION_STATUS_SYNSENT;
+      con->status     = TCP_CONNECTION_STATUS_SYNSENT1;
 
+      con->sending    = NULL;
       con->send_queue = NULL;
       con->recv_queue = NULL;
       con->send_queue_end = &con->send_queue;
@@ -513,7 +544,7 @@ static int tcp_proc(struct netbuf *buf)
       tcp_search_connection_from_number(0); /* 頭出し */
 
       /* SYNを送信 */
-      tcp_makesendpkt(con, TCP_HEADER_FLAG_SYN, 1460, 1460, 1, 0, NULL);
+      tcp_send_enqueue(con, TCP_HEADER_FLAG_SYN, 1460, 1460, 1, 0, NULL);
       break;
 
     case TCP_CMD_CLOSE:
@@ -522,6 +553,7 @@ static int tcp_proc(struct netbuf *buf)
 
       /* FINを送信 */
       tcp_send_enqueue(con, TCP_HEADER_FLAG_FINACK, 1460, 0, 0, 0, NULL);
+      con->status = TCP_CONNECTION_STATUS_FINWAIT1;
       break;
 
     case TCP_CMD_RECV:

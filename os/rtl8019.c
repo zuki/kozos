@@ -170,7 +170,6 @@ static int port_init(void)
 
   *H8_3069F_ISCR = 0x00;  /* lowレベルで割込み */
   *H8_3069F_IPRA = 0x00;
-  *H8_3069F_IER  = 0x20;  /* IRQ5 割込み有効化 */
 
   return 0;
 }
@@ -239,6 +238,8 @@ int rtl8019_init(int index, unsigned char macaddr[])
   *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
   *NE2000_TCR = NE2000_TCR_NORMAL;
   *NE2000_IMR = 0x00;
+
+  *H8_3069F_IER  = 0x20;  /* IRQ5 割込み有効化 */
 
   return 0;
 }
