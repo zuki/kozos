@@ -290,7 +290,7 @@ int rtl8019_intr_is_recv_enable(int index)
   *NE2000_CR  = NE2000_CR_P2 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
   mask        = *NE2000_IMR;
   *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
-  return (mask | NE2000_ISR_PRX);
+  return (mask & NE2000_ISR_PRX);
 }
 
 void rtl8019_intr_recv_enable(int index)
@@ -335,8 +335,20 @@ int rtl8019_is_recv_enable(int index)
 int rtl8019_intr_clear(int index)
 {
   *H8_3069F_ISR = 0x00;
-  *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
-  *NE2000_ISR   = NE2000_ISR_PTX | NE2000_ISR_PRX;
+  return 0;
+}
+
+int rtl8019_intr_clear_send(int index)
+{
+  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  *NE2000_ISR = NE2000_ISR_PTX;
+  return 0;
+}
+
+int rtl8019_intr_clear_recv(int index)
+{
+  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  *NE2000_ISR = NE2000_ISR_PRX;
   return 0;
 }
 

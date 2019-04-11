@@ -55,9 +55,6 @@ static void send_packet(struct netbuf *buf)
         send_buf_tail = &send_buf_head;
       buf->next = NULL;
 
-      rtl8019_send(0, buf->size, buf->top);
-      kz_kmfree(buf);
-
       /*
        * 送信割込み無効ならば，送信開始されていないので送信開始する．
        * 送信割込み有効ならば送信開始されており，送信割込みの延長で
@@ -66,6 +63,9 @@ static void send_packet(struct netbuf *buf)
       if (!rtl8019_intr_is_send_enable(0)) {
         rtl8019_intr_send_enable(0);  /* 送信割込み有効化 */
       }
+
+      rtl8019_send(0, buf->size, buf->top);
+      kz_kmfree(buf);
     }
   }
 }
@@ -75,7 +75,13 @@ static void netdrv_intr(void)
 {
   struct netbuf *pkt;
 
+  /* send/recv個別にクリアするので不要?     */
+  /* コメントアウトしないと受信が始まらない */
+  /* rtl8019_intr_clear(0);                 */
+
+
   if (rtl8019_is_recv_enable(0)) {
+    rtl8019_intr_clear_recv(0);
     pkt = kx_kmalloc(DEFAULT_NETBUF_SIZE);
     memset(pkt, 0, DEFAULT_NETBUF_SIZE);
     pkt->cmd = NETDRV_CMD_RECVINTR;
@@ -83,13 +89,13 @@ static void netdrv_intr(void)
   }
 
   if (rtl8019_is_send_enable(0)) {
+    rtl8019_intr_clear_send(0);
     pkt = kx_kmalloc(DEFAULT_NETBUF_SIZE);
     memset(pkt, 0, DEFAULT_NETBUF_SIZE);
     pkt->cmd = NETDRV_CMD_SENDINTR;
     kx_send(MSGBOX_ID_NETPROC, 0, (char *)pkt);
   }
 
-  rtl8019_intr_clear(0);
 }
 
 static int netdrv_init(void)

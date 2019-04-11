@@ -380,7 +380,7 @@ static int tcp_recv(struct netbuf *pkt)
         con->sending = NULL;
       }
     }
-    puts("status: "); putxval((unsigned long)con->status, 0); puts("\n");
+
     /* データ送信に対してACKが返ってきたので、次のデータを送信する */
     if (con->status == TCP_CONNECTION_STATUS_ESTAB) {
       tcp_send_flush(con);
@@ -457,7 +457,7 @@ static int tcp_recv(struct netbuf *pkt)
     /* ESTABなら，ACK, FIN+ACK を返してLASTACKに遷移 */
     if (con->status == TCP_CONNECTION_STATUS_ESTAB) {
       con->ack_number = tcphdr->seq_number + 1;
-      tcp_makesendpkt(con, TCP_HEADER_FLAG_ACK, 14600, 0, 0, 0, NULL);
+      tcp_makesendpkt(con, TCP_HEADER_FLAG_ACK, 1460, 0, 0, 0, NULL);
       /* con->status = TCP_CONNECTION_STATUS_CLOSEWAIT; */
       tcp_send_enqueue(con, TCP_HEADER_FLAG_FINACK, 1460, 0, 0, 0, NULL);
       con->status = TCP_CONNECTION_STATUS_LASTACK;
@@ -577,7 +577,7 @@ static int tcp_proc(struct netbuf *buf)
       con->status = TCP_CONNECTION_STATUS_FINWAIT1;
       break;
 
-    case TCP_CMD_RECV:
+    case TCP_CMD_IPRECV:
       ret = tcp_recv(buf);
       break;
 
@@ -602,7 +602,7 @@ int tcp_main(int argc, char *argv[])
   buf = kz_kmalloc(sizeof(*buf));
   buf->cmd = IP_CMD_REGPROTO;
   buf->option.ip.regproto.protocol = IP_PROTOCOL_TCP;
-  buf->option.ip.regproto.cmd      = TCP_CMD_RECV;
+  buf->option.ip.regproto.cmd      = TCP_CMD_IPRECV;
   buf->option.ip.regproto.id       = MSGBOX_ID_TCPPROC;
   kz_send(MSGBOX_ID_IPPROC, 0, (char *)buf);
 
