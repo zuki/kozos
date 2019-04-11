@@ -380,7 +380,7 @@ static int tcp_recv(struct netbuf *pkt)
         con->sending = NULL;
       }
     }
-
+    puts("status: "); putxval((unsigned long)con->status, 0); puts("\n");
     /* データ送信に対してACKが返ってきたので、次のデータを送信する */
     if (con->status == TCP_CONNECTION_STATUS_ESTAB) {
       tcp_send_flush(con);
@@ -426,6 +426,7 @@ static int tcp_recv(struct netbuf *pkt)
     }
   }
 
+#if 0
   if ((tcphdr->flags & TCP_HEADER_FLAG_FINACK) == TCP_HEADER_FLAG_FINACK) {
       /* FINWAIT2なら、ACKを返してCLOSEDに遷移 */
       if (con->status == TCP_CONNECTION_STATUS_FINWAIT2) {
@@ -440,6 +441,26 @@ static int tcp_recv(struct netbuf *pkt)
         /* con->status = TCP_CONNECTION_STATUS_CLOSEWAIT; */
         tcp_send_enqueue(con, TCP_HEADER_FLAG_FINACK, 1460, 0, 0, 0, NULL);
         con->status = TCP_CONNECTION_STATUS_LASTACK;
+    }
+  }
+#endif
+
+  if (tcphdr->flags & TCP_HEADER_FLAG_FIN) {
+    /* FINWAIT2なら，ACKを返してCLOSEDに遷移 */
+    if (con->status == TCP_CONNECTION_STATUS_FINWAIT2) {
+      con->ack_number = tcphdr->seq_number + 1;
+      tcp_makesendpkt(con, TCP_HEADER_FLAG_ACK, 1460, 0, 0, 0, NULL);
+      con->status = TCP_CONNECTION_STATUS_CLOSED;
+      closed++;
+    }
+
+    /* ESTABなら，ACK, FIN+ACK を返してLASTACKに遷移 */
+    if (con->status == TCP_CONNECTION_STATUS_ESTAB) {
+      con->ack_number = tcphdr->seq_number + 1;
+      tcp_makesendpkt(con, TCP_HEADER_FLAG_ACK, 14600, 0, 0, 0, NULL);
+      /* con->status = TCP_CONNECTION_STATUS_CLOSEWAIT; */
+      tcp_send_enqueue(con, TCP_HEADER_FLAG_FINACK, 1460, 0, 0, 0, NULL);
+      con->status = TCP_CONNECTION_STATUS_LASTACK;
     }
   }
 

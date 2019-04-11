@@ -82,6 +82,8 @@
 #define NE2000_CR_STP      (1 << 0)
 
 #define NE2000_ISR_RDC     (1 << 6)
+#define NE2000_ISR_PTX     (1 << 1)
+#define NE2000_ISR_PRX     (1 << 0)
 
 #define NE2000_RCR_MON     (1 << 5)
 #define NE2000_RCR_PRO     (1 << 4)
@@ -125,6 +127,7 @@ static int read_data(int addr, int size, char *buf)
   *NE2000_RBCR1 = (size >> 8) & 0xff;
   *NE2000_RSAR0 = addr & 0xff;
   *NE2000_RSAR1 = (addr >> 8) & 0xff;
+  *NE2000_ISR   = NE2000_ISR_RDC;
   *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_READ | NE2000_CR_STA;
   for (i = 0; i < size; i++) {
     buf[i] = *RTL8019_RDMAP;
@@ -144,6 +147,7 @@ static int write_data(int addr, int size, char *buf)
   *NE2000_RBCR1 = (size >> 8) & 0xff;
   *NE2000_RSAR0 = addr & 0xff;
   *NE2000_RSAR1 = (addr >> 8) & 0xff;
+  *NE2000_ISR   = NE2000_ISR_RDC;
   *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_WRITE | NE2000_CR_STA;
   for (i = 0; i < size; i++) {
     *RTL8019_RDMAP = buf[i];
@@ -239,39 +243,100 @@ int rtl8019_init(int index, unsigned char macaddr[])
   *NE2000_TCR = NE2000_TCR_NORMAL;
   *NE2000_IMR = 0x00;
 
+  /*
+   * port_init() の内部でこれをやると，割り込みが残ったままリセットで再起動
+   * したときに固まってしまう．
+   * RTL8019の割り込みまわりを初期化した後で有効化すること．
+   */
   *H8_3069F_IER  = 0x20;  /* IRQ5 割込み有効化 */
 
   return 0;
 }
 
-void rtl8019_intr_enable(int index)
+int rtl8019_intr_is_send_enable(int index)
 {
+  unsigned char mask;
+
+  *NE2000_CR  = NE2000_CR_P2 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  mask        = *NE2000_IMR;
   *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
-  *NE2000_IMR = 0x01;
+  return (mask & NE2000_ISR_PTX);
 }
 
-void rtl8019_intr_disable(int index)
+void rtl8019_intr_send_enable(int index)
 {
-  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STP;
-  *NE2000_IMR = 0x00;
+  unsigned char mask;
+
+  *NE2000_CR  = NE2000_CR_P2 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  mask        = *NE2000_IMR;
+  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  *NE2000_IMR = mask | NE2000_ISR_PTX;
 }
 
-int rtl8019_checkintr(int index)
+void rtl8019_intr_send_disable(int index)
+{
+  unsigned char mask;
+
+  *NE2000_CR  = NE2000_CR_P2 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  mask        = *NE2000_IMR;
+  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  *NE2000_IMR = mask & ~NE2000_ISR_PTX;
+}
+
+int rtl8019_intr_is_recv_enable(int index)
+{
+  unsigned char mask;
+
+  *NE2000_CR  = NE2000_CR_P2 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  mask        = *NE2000_IMR;
+  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  return (mask | NE2000_ISR_PRX);
+}
+
+void rtl8019_intr_recv_enable(int index)
+{
+  unsigned char mask;
+
+  *NE2000_CR  = NE2000_CR_P2 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  mask        = *NE2000_IMR;
+  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  *NE2000_IMR = mask | NE2000_ISR_PRX;
+}
+
+void rtl8019_intr_recv_disable(int index)
+{
+  unsigned char mask;
+
+  *NE2000_CR = NE2000_CR_P2 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  mask       = *NE2000_IMR;
+  *NE2000_CR = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  *NE2000_IMR = mask & ~NE2000_ISR_PRX;
+}
+
+int rtl8019_is_send_enable(int index)
 {
   unsigned char status;
 
   *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
   status = *NE2000_ISR;
-  return (status & 0x01) ? 1 : 0;
+  return ((status & NE2000_ISR_PTX) ? 1 : 0);
 }
 
-int rtl8019_clearintr(int index)
+int rtl8019_is_recv_enable(int index)
 {
-  if (rtl8019_checkintr(index)) {
-    *H8_3069F_ISR = 0x00;
-    *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
-    *NE2000_ISR   = 0xff;
-  }
+  unsigned char status;
+
+  *NE2000_CR  = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  status = *NE2000_ISR;
+  return ((status & NE2000_ISR_PRX) ? 1 : 0);
+}
+
+
+int rtl8019_intr_clear(int index)
+{
+  *H8_3069F_ISR = 0x00;
+  *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_ABORT | NE2000_CR_STA;
+  *NE2000_ISR   = NE2000_ISR_PTX | NE2000_ISR_PRX;
   return 0;
 }
 

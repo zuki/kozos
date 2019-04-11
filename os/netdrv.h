@@ -2,8 +2,10 @@
 #define _NETDRV_H_INCLUDED_
 
 #define NETDRV_DEVICE_NUM 1
-#define NETDRV_CMD_USE    'u'   /* イーサネット・ドライバの使用開始 */
-#define NETDRV_CMD_SEND   's'   /* イーサネットへのフレーム出力     */
+#define NETDRV_CMD_USE      'u' /* イーサネット・ドライバの使用開始 */
+#define NETDRV_CMD_SEND     's' /* イーサネットへのフレーム出力     */
+#define NETDRV_CMD_RECVINTR 'r' /* 受信割り込み */
+#define NETDRV_CMD_SENDINTR 'i' /* 送信割り込み */
 
 #define MACADDR_SIZE  6
 #define IPADDR_SIZE   4
