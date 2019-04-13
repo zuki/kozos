@@ -80,24 +80,21 @@ int main(void)
     puts("kzload> "); /* プロンプト表示 */
     gets(buf);        /* シリアルからのコマンド受信 */
 
-    if (!strcmp(buf, "load")) { /* XMODEMによるファイルのダウンロード */
-      size = xmodem_recv();
+    if (!strcmp(buf, "load")) { /* elfファイルを直接ロード */
+      size = load_from_xmodem();
       wait(); /* 転送アプリが終了し端末アプリに制御が戻るまで待ち合わせる */
       if (size <= 0) {
-        puts("XMODEM receive error.\n");
+        puts("Elf loading error.\n");
       } else {
-        puts("XMODEM receive succeeded.\n");
+        puts("Elf loading succeeded.\n");
       }
     } else if (!strcmp(buf, "dump")) {  /* メモリの16進ダンプ出力 */
-      puts("size: ");
-      putxval(size, 0);
-      puts("\n");
       puts("starting from entry point: ");
-      putxval((unsigned long)srec_startaddr(), 0);
+      putxval((unsigned long)elf_startaddr(), 0);
       puts("\n");
-      dump(srec_startaddr(), size);
+      dump((char *)elf_startaddr(), size);
     } else if (!strcmp(buf, "run")) {   /* ELF形式ファイルの実行 */
-      entry_point = srec_startaddr();  /* メモリ上に展開（ロード） */
+      entry_point = elf_startaddr();  /* メモリ上に展開（ロード） */
       if (!entry_point) {
         puts("run error!\n");
       } else {
