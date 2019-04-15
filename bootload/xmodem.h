@@ -4,6 +4,6 @@
 #define XMODEM_BLOCK_SIZE 128
 
 long xmodem_recv(void);
-int load_from_xmodem(void);
+long load_from_xmodem(void);
 
 #endif

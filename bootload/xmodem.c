@@ -62,7 +62,7 @@ static int xmodem_read_block(unsigned char block_number, char *buf)
   return 0;
 }
 
-int load_from_xmodem(void)
+long load_from_xmodem(void)
 {
   int receiving = 0, ret;
   long size = 0;

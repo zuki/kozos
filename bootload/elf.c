@@ -98,7 +98,7 @@ char *elf_load(char *buf)
 
 static char *startaddr = NULL;  /* ロードするプログラムの開始アドレス */
 
-int load_program(unsigned char block_number, char *buf)
+long load_program(unsigned char block_number, char *buf)
 {
   struct elf_header         *ehdr;
   static struct elf_program_header phdrs[MAX_PROGROM_HEADERS];
@@ -114,8 +114,8 @@ int load_program(unsigned char block_number, char *buf)
   static int  ld_idx  = 0; /* ロード対象のphdrのインデックス */
   static long loaded  = 0; /* ロード済みバイト数 */
 
-  int i, idx, load, size = 0;
-  long startp, endp, load_p;
+  int i, idx, load;
+  long startp, endp, load_p, size = 0;
 
   startp = (block_number - 1) * XMODEM_BLOCK_SIZE;
   endp   = startp + XMODEM_BLOCK_SIZE;
