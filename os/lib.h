@@ -14,6 +14,7 @@ char *strchr(char *s, int c);
 int putc(unsigned char c);         /* 一文字送信 */
 unsigned char getc(void);  /* 一文字受信 */
 int puts(unsigned char *str);      /* 文字列送信 */
+int putx(unsigned char *str);      /* 文字列を16進変換して送信 */
 int gets(unsigned char *buf);      /* 文字列受信 */
 int putxval(unsigned long value, int column); /* 数値の16進表示 */
 #endif

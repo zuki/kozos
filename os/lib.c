@@ -126,6 +126,27 @@ int puts(unsigned char *str)
   return 0;
 }
 
+static unsigned char toHex(unsigned char c)
+{
+  if (c >= 0 && c <= 9)
+    return '0' + c;
+  else if (c >= 10 && c <= 15)
+    return 'A' + c - 10;
+  else
+    return ' ';
+}
+
+/* 文字列を16進変換して送信 */
+int putx(unsigned char *str)
+{
+  while(*str) {
+    putc(toHex((*str >> 4) & 0xf));
+    putc(toHex(*str++ & 0xf));
+  }
+  return 0;
+}
+
+
 /* 文字列受信 */
 int gets(unsigned char *buf)
 {

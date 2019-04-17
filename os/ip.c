@@ -4,6 +4,7 @@
 #include "ethernet.h"
 #include "arp.h"
 #include "tcp.h"
+#include "udp.h"
 #include "ip.h"
 #include "lib.h"
 
@@ -156,6 +157,11 @@ int ip_main(int argc, char *argv[])
   buf->cmd = TCP_CMD_IPADDR;
   buf->option.common.ipaddr.addr = IPADDR;
   kz_send(MSGBOX_ID_TCPPROC, 0, (char *)buf);
+
+  buf = kz_kmalloc(sizeof(*buf));
+  buf->cmd = UDP_CMD_IPADDR;
+  buf->option.common.ipaddr.addr = IPADDR;
+  kz_send(MSGBOX_ID_UDPPROC, 0, (char *)buf);
 
   while (1) {
     kz_recv(MSGBOX_ID_IPPROC, NULL, (char **)&buf);

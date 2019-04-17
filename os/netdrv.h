@@ -78,6 +78,31 @@ struct netbuf {
         int number;
       } send;
     } tcp;
+    union {
+      struct {
+        uint16 src_port;
+        uint16 dst_port;
+        uint32 ipaddr;
+        kz_msgbox_id_t id;
+      } regport;
+      struct {
+        uint16 port;
+      } relport;
+      struct {
+        uint16 port;
+        uint32 ipaddr;
+      } recv;
+      struct {
+        uint16 src_port;
+        uint16 dst_port;
+        uint32 ipaddr;
+      } send;
+    } udp;
+    union {
+      struct {
+        uint32 ipaddr;
+      } start;
+    } echo;
   } option;
 
   /*

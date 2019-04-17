@@ -388,6 +388,7 @@ int rtl8019_send(int index, int size, char *buf)
 {
   write_data(NE2000_TP_START * 256, size, buf);
 
+  /* Ethernetフレームの最小長 = 60 = ethernet_header(14) + IPデータグラム(46-1500) */
   if (size < 60)
     size = 60;
 
