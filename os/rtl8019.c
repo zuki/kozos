@@ -19,35 +19,35 @@
 
 #define RTL8019_ADDR     0x200000
 
-#define NE2000_CR        ((volatile uint8 *)(RTL8019_ADDR + 0x00))
-#define RTL8019_RDMAP    ((volatile uint8 *)(RTL8019_ADDR + 0x10))
-#define RTL8019_RP       ((volatile uint8 *)(RTL8019_ADDR + 0x18))
+#define NE2000_CR        ((volatile uint8 *)(RTL8019_ADDR + 0x00)) /* コマンドレジスタ */
+#define RTL8019_RDMAP    ((volatile uint8 *)(RTL8019_ADDR + 0x10)) /* リモートDMAポート */
+#define RTL8019_RP       ((volatile uint8 *)(RTL8019_ADDR + 0x18)) /* リセットポート */
 
 /* Page0 */
-#define NE2000_PSTART    ((volatile uint8 *)(RTL8019_ADDR + 0x01))
-#define NE2000_PSTOP     ((volatile uint8 *)(RTL8019_ADDR + 0x02))
-#define NE2000_BNRY      ((volatile uint8 *)(RTL8019_ADDR + 0x03))
-#define NE2000_TPSR      ((volatile uint8 *)(RTL8019_ADDR + 0x04))
-#define NE2000_TBCR0     ((volatile uint8 *)(RTL8019_ADDR + 0x05))
+#define NE2000_PSTART    ((volatile uint8 *)(RTL8019_ADDR + 0x01)) /* 受信リングバッファの開始アドレスを設定 */
+#define NE2000_PSTOP     ((volatile uint8 *)(RTL8019_ADDR + 0x02)) /* 受信リングバッファの最終アドレスを設定 */
+#define NE2000_BNRY      ((volatile uint8 *)(RTL8019_ADDR + 0x03)) /* 受信リングバッファの最終受信アドレスを示す */
+#define NE2000_TPSR      ((volatile uint8 *)(RTL8019_ADDR + 0x04)) /* 送信リングバッファの開始アドレスを設定 */
+#define NE2000_TBCR0     ((volatile uint8 *)(RTL8019_ADDR + 0x05)) /* 送信パケットのバイト数を設定 */
 #define NE2000_TBCR1     ((volatile uint8 *)(RTL8019_ADDR + 0x06))
-#define NE2000_ISR       ((volatile uint8 *)(RTL8019_ADDR + 0x07))
-#define NE2000_RSAR0     ((volatile uint8 *)(RTL8019_ADDR + 0x08))
+#define NE2000_ISR       ((volatile uint8 *)(RTL8019_ADDR + 0x07)) /* NIC割込状態を示す */
+#define NE2000_RSAR0     ((volatile uint8 *)(RTL8019_ADDR + 0x08)) /* リモートDMAの開始アドレスを設定 */
 #define NE2000_RSAR1     ((volatile uint8 *)(RTL8019_ADDR + 0x09))
-#define NE2000_RBCR0     ((volatile uint8 *)(RTL8019_ADDR + 0x0a))
+#define NE2000_RBCR0     ((volatile uint8 *)(RTL8019_ADDR + 0x0a)) /* リモートDMAのバイト数を設定 */
 #define NE2000_RBCR1     ((volatile uint8 *)(RTL8019_ADDR + 0x0b))
-#define NE2000_RCR       ((volatile uint8 *)(RTL8019_ADDR + 0x0c))
-#define NE2000_TCR       ((volatile uint8 *)(RTL8019_ADDR + 0x0d))
-#define NE2000_DCR       ((volatile uint8 *)(RTL8019_ADDR + 0x0e))
-#define NE2000_IMR       ((volatile uint8 *)(RTL8019_ADDR + 0x0f))
+#define NE2000_RCR       ((volatile uint8 *)(RTL8019_ADDR + 0x0c)) /* 受信設定 */
+#define NE2000_TCR       ((volatile uint8 *)(RTL8019_ADDR + 0x0d)) /* 送信設定 */
+#define NE2000_DCR       ((volatile uint8 *)(RTL8019_ADDR + 0x0e)) /* データ設定 */
+#define NE2000_IMR       ((volatile uint8 *)(RTL8019_ADDR + 0x0f)) /* 割込マスク: ISRの各ビットに対応 */
 
 /* Page1 */
-#define NE2000_PAR0      ((volatile uint8 *)(RTL8019_ADDR + 0x01))
+#define NE2000_PAR0      ((volatile uint8 *)(RTL8019_ADDR + 0x01)) /* 自ホストの物理アドレス */
 #define NE2000_PAR1      ((volatile uint8 *)(RTL8019_ADDR + 0x02))
 #define NE2000_PAR2      ((volatile uint8 *)(RTL8019_ADDR + 0x03))
 #define NE2000_PAR3      ((volatile uint8 *)(RTL8019_ADDR + 0x04))
 #define NE2000_PAR4      ((volatile uint8 *)(RTL8019_ADDR + 0x05))
 #define NE2000_PAR5      ((volatile uint8 *)(RTL8019_ADDR + 0x06))
-#define NE2000_CURR      ((volatile uint8 *)(RTL8019_ADDR + 0x07))
+#define NE2000_CURR      ((volatile uint8 *)(RTL8019_ADDR + 0x07)) /* 第1受信バッファのページアドレスを示す */
 #define NE2000_MAR0      ((volatile uint8 *)(RTL8019_ADDR + 0x08))
 #define NE2000_MAR1      ((volatile uint8 *)(RTL8019_ADDR + 0x09))
 #define NE2000_MAR2      ((volatile uint8 *)(RTL8019_ADDR + 0x0a))
@@ -70,38 +70,43 @@
 #define RTL8019_INTR    ((volatile uint8 *)(RTL8019_ADDR + 0x0b))
 #define RTL8019_CONFIG4 ((volatile uint8 *)(RTL8019_ADDR + 0x0d))
 
-#define NE2000_CR_P0       (0 << 6)
-#define NE2000_CR_P1       (1 << 6)
-#define NE2000_CR_P2       (2 << 6)
-#define NE2000_CR_P3       (3 << 6)
-#define NE2000_CR_RD_ABORT (4 << 3)
-#define NE2000_CR_RD_WRITE (2 << 3)
-#define NE2000_CR_RD_READ  (1 << 3)
-#define NE2000_CR_TXP      (1 << 2)
-#define NE2000_CR_STA      (1 << 1)
-#define NE2000_CR_STP      (1 << 0)
+/* CR: Command Register: 00H in all pages */
+#define NE2000_CR_P0       (0 << 6) /* Page0 選択: PS1=0, PS0 = 0 */
+#define NE2000_CR_P1       (1 << 6) /* Page1 選択: PS1=0, PS0 = 1 */
+#define NE2000_CR_P2       (2 << 6) /* Page2 選択: PS1=1, PS0 = 0 */
+#define NE2000_CR_P3       (3 << 6) /* Page3 選択: PS1=1, PS0 = 1 */
+#define NE2000_CR_RD_ABORT (4 << 3) /* abort/complete remote DMA */
+#define NE2000_CR_RD_WRITE (2 << 3) /* remote write */
+#define NE2000_CR_RD_READ  (1 << 3) /* remote read */
+#define NE2000_CR_TXP      (1 << 2) /* set to transmit a packet */
+#define NE2000_CR_STA      (1 << 1) /* STA = 1, STP = 0 -> Start command */
+#define NE2000_CR_STP      (1 << 0) /* STA = 0, STP = 1 -> Stop command  */
 
-#define NE2000_ISR_RDC     (1 << 6)
-#define NE2000_ISR_PTX     (1 << 1)
-#define NE2000_ISR_PRX     (1 << 0)
+/* ISR: Interrupt Status Registor: 07H in Page0 */
+#define NE2000_ISR_RDC     (1 << 6) /* remote DMA operation has been completed */
+#define NE2000_ISR_PTX     (1 << 1) /* packet transmitted with no errors */
+#define NE2000_ISR_PRX     (1 << 0) /* packet received with no errors */
 
-#define NE2000_RCR_MON     (1 << 5)
-#define NE2000_RCR_PRO     (1 << 4)
-#define NE2000_RCR_AM      (1 << 3)
-#define NE2000_RCR_AB      (1 << 2)
+/* RCR: Receive Configuration Register: 0CH in Page0 (W), in Page2 (R) */
+#define NE2000_RCR_MON     (1 << 5) /* Monitor mode: check packet */
+#define NE2000_RCR_PRO     (1 << 4) /* accept all packet with physical dest-addr */
+#define NE2000_RCR_AM      (1 << 3) /* accept packets with multicast dest-addr */
+#define NE2000_RCR_AB      (1 << 2) /* accecpt packets with broadcat dest-addr */
 
-#define NE2000_TCR_ELB     (2 << 1)
-#define NE2000_TCR_ILB     (1 << 1)
-#define NE2000_TCR_NORMAL  (0 << 1)
+/* TCR: Transmit Configuration Register: 0D in Page0 (W), in Page2 (R) */
+#define NE2000_TCR_ELB     (2 << 1) /* External lookback */
+#define NE2000_TCR_ILB     (1 << 1) /* Internal lookback */
+#define NE2000_TCR_NORMAL  (0 << 1) /* Normal operation  */
 
-#define NE2000_DCR_F1      (1 << 6)
-#define NE2000_DCR_F0      (1 << 5)
-#define NE2000_DCR_LS      (1 << 3)
-#define NE2000_DCR_BOS     (1 << 1)
+/* DCR: Data Configuration Register: 0EH in Pageo (W), in Page2 (R) */
+#define NE2000_DCR_F1      (1 << 6) /* select FIFO threshold:  FT1 */
+#define NE2000_DCR_F0      (1 << 5) /* select FIFO threshold:  FT0 */
+#define NE2000_DCR_LS      (1 << 3) /* Loopback select, 0: loopback mode */
+#define NE2000_DCR_BOS     (1 << 1) /* Byte order select, 0: Little, 1: Big */
 
-#define NE2000_TP_START    0x40
-#define NE2000_RP_START    0x46
-#define NE2000_RP_STOP     0x80
+#define NE2000_TP_START    0x40     /* start page address of packet to the transmitted */
+#define NE2000_RP_START    0x46     /* start page address of received buffer ring */
+#define NE2000_RP_STOP     0x80     /* stop page address of received buffer ring */
 
 static void udelay(int usec)
 {
@@ -129,10 +134,10 @@ static int read_data(int addr, int size, char *buf)
   *NE2000_RSAR1 = (addr >> 8) & 0xff;
   *NE2000_ISR   = NE2000_ISR_RDC;
   *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_READ | NE2000_CR_STA;
-  for (i = 0; i < size; i++) {
+  for (i = 0; i < size; i++) { /* 受信処理: リモートDMAポートから読み込む */
     buf[i] = *RTL8019_RDMAP;
   }
-  while ((*NE2000_ISR & NE2000_ISR_RDC) == 0)
+  while ((*NE2000_ISR & NE2000_ISR_RDC) == 0) /* 受信完了を待つ */
     ;
 
   return 0;
@@ -149,10 +154,10 @@ static int write_data(int addr, int size, char *buf)
   *NE2000_RSAR1 = (addr >> 8) & 0xff;
   *NE2000_ISR   = NE2000_ISR_RDC;
   *NE2000_CR    = NE2000_CR_P0 | NE2000_CR_RD_WRITE | NE2000_CR_STA;
-  for (i = 0; i < size; i++) {
+  for (i = 0; i < size; i++) { /* 送信処理: リモートDMAポートに書き込む */
     *RTL8019_RDMAP = buf[i];
   }
-  while ((*NE2000_ISR & NE2000_ISR_RDC) == 0)
+  while ((*NE2000_ISR & NE2000_ISR_RDC) == 0) /* 受信完了を待つ */
     ;
 
   return 0;

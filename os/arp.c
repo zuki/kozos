@@ -58,7 +58,7 @@ static struct addrset *arp_setaddr(uint32 ipaddr, uint8 macaddr[])
     addr->ipaddr = ipaddr;
     kz_send(MSGBOX_ID_ARPADRLIST, 0, (char *)addr);
     /*
-     * 終端のテー見ねー他のさらに後ろに追加したので、もう一周させて
+     * 終端のターミネータのさらに後ろに追加したので、もう一周させて
      * ターミネータが終端にくるようにする
      */
     arp_getaddr(ipaddr);
