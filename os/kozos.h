@@ -49,4 +49,5 @@ int tcp_main(int argc, char *argv[]);
 int udp_main(int argc, char *argv[]);
 int httpd_main(int argc, char *argv[]);
 int echo_main(int argc, char *argv[]);
+int ntp_main(int argc, char *argv[]);
 #endif

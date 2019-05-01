@@ -110,9 +110,10 @@
 
 static void udelay(int usec)
 {
-  volatile int i;
-  for (i = 0; i < 20; i++)  /* 20MHz: 1Hz = 1/20 usec */
-    ;
+  volatile int i, j;
+  for (j = 0; j < usec; j++)
+    for (i = 0; i < 20; i++)  /* 20MHz: 1Hz = 1/20 usec */
+      ;
 }
 
 static void mdelay(int msec)

@@ -27,7 +27,7 @@ struct addrset {
 };
 
 static unsigned char my_macaddr[MACADDR_SIZE];
-static uint32   my_ipaddr;
+static uint32 my_ipaddr;
 
 static struct addrset *arp_getaddr(uint32 ipaddr)
 {
@@ -79,7 +79,7 @@ static void arp_flush(int count)
       break;
     }
 
-    addr = arp_getaddr(pkt->option.ethernet.send.dst_ipaddr);
+    addr = arp_getaddr(pkt->option.ethernet.send.router_ipaddr);
     if (addr) {
       addr = (count == 0) ? NULL : addr;
       count = (count > 0) ? (count - 1) : count;
@@ -175,14 +175,14 @@ static int arp_send(struct netbuf *pkt)
   kz_send(MSGBOX_ID_ARPPKTLIST, 0, (char *)pkt);
   arp_flush(0); /* 終端に追加したので1周させ頭出しを行う */
 
-  addr = arp_getaddr(pkt->option.ethernet.send.dst_ipaddr);
+  addr = arp_getaddr(pkt->option.ethernet.send.router_ipaddr);
 
   if (addr) {
     arp_flush(-1);
   } else {
     /* ARP request を送信 */
     arp_sendpkt(ARP_OPERATION_REQUEST, NULL,
-                pkt->option.ethernet.send.dst_ipaddr);
+                pkt->option.ethernet.send.router_ipaddr);
   }
 
   return 1;

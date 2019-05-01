@@ -65,7 +65,7 @@ static int consdrv_intrproc(struct consreg *cons)
 
   if (serial_is_recv_enable(cons->index)) {  /* 受信割込み */
     c = serial_recv_byte(cons->index);
-    if (c == '\r')  /* 改行コーロ変換（\r -> \n） */
+    if (c == '\r')  /* 改行コード変換（\r -> \n） */
       c = '\n';
 
     send_string(cons, &c, 1);   /* エコーバック処理 */
@@ -142,7 +142,7 @@ static int consdrv_command(struct consreg *cons, kz_thread_id_t id,
 
     case CONSDRV_CMD_WRITE:   /* コンソールへの文字列出力 */
       /*
-       * send_string() では送信バッファを操作しており再入付加なので
+       * send_string() では送信バッファを操作しており再入不可なので
        * 排他のために割込禁止にして呼び出す。
        */
       INTR_DISABLE;

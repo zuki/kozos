@@ -7,8 +7,9 @@
 #define NETDRV_CMD_RECVINTR 'r' /* 受信割り込み */
 #define NETDRV_CMD_SENDINTR 'i' /* 送信割り込み */
 
-#define MACADDR_SIZE  6
-#define IPADDR_SIZE   4
+#define MACADDR_SIZE    6
+#define IPADDR_SIZE     4
+#define DAYTIME_SIZE   24
 
 #define ETHERNET_TYPE_IP    0x0800
 #define ETHERNET_TYPE_ARP   0x0806
@@ -39,6 +40,7 @@ struct netbuf {
         uint8  dst_macaddr[MACADDR_SIZE];
         uint16 type;
         uint32 dst_ipaddr;
+        uint32 router_ipaddr;
       } send;
     } ethernet;
     union {
@@ -103,6 +105,14 @@ struct netbuf {
         uint32 ipaddr;
       } start;
     } echo;
+    union {
+      struct {
+        uint32 ipaddr;
+      } send;
+      struct {
+        uint8 daytime[DAYTIME_SIZE];
+      } recv;
+    } ntp;
   } option;
 
   /*

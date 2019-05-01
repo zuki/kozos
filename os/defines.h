@@ -31,6 +31,7 @@ typedef enum {
   MSGBOX_ID_UDPPROC,
   MSGBOX_ID_UDPPORTLIST,
   MSGBOX_ID_ECHO,
+  MSGBOX_ID_NTP,
   MSGBOX_ID_NUM
 } kz_msgbox_id_t;
 

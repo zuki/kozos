@@ -164,7 +164,7 @@ int tftp_main(int argc, char *argv[])
     case UDP_CMD_RECV:
       ret = tftp_recv(buf, server, port, &buffer);
       if (ret == 1) {
-	send_relport(port);
+        send_relport(port);
       }
       break;
     }

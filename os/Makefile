@@ -17,7 +17,7 @@ OBJS    = startup.o main.o interrupt.o
 OBJS   += lib.o serial.o timer.o rtl8019.o
 
 # sources of kozos
-OBJS	+= kozos.o syscall.o memory.o command.o clock.o httpd.o echo.o
+OBJS	+= kozos.o syscall.o memory.o command.o clock.o httpd.o echo.o ntp.o
 OBJS    += ethernet.o arp.o ip.o icmp.o tcp.o udp.o
 OBJS	+= consdrv.o timerdrv.o netdrv.o
 

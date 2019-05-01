@@ -21,8 +21,13 @@ struct ip_header {
   uint32 dst_addr;
 };
 
-#define IPADDR  0xc0a80b0b   /* 192.168.11.11 */
-static uint32 my_ipaddr = IPADDR;
+#define IPADDR          0xc0a80b0b   /* 192.168.11.11 */
+#define SUBNET_MASK     0xffffff00   /* 255.255.255.0 */
+#define DEFAULT_GATEWAY 0xc0a80b01   /* 192.168.11.1  */
+
+static uint32 my_ipaddr  = IPADDR;
+static uint32 my_subnet  = SUBNET_MASK;
+static uint32 my_gateway = DEFAULT_GATEWAY;
 
 #define PROTOCOL_MAXNUM IP_PROTOCOL_UDP   /* UDPまで利用可能 */
 
@@ -114,6 +119,7 @@ static int ip_send(struct netbuf *pkt)
   memset(pkt->option.ethernet.send.dst_macaddr, 0, MACADDR_SIZE);
   pkt->option.ethernet.send.type = ETHERNET_TYPE_IP;
   pkt->option.ethernet.send.dst_ipaddr = iphdr->dst_addr;
+  pkt->option.ethernet.send.router_ipaddr = ((iphdr->dst_addr & my_subnet) == (my_ipaddr & my_subnet)) ? iphdr->dst_addr : my_gateway;
   kz_send(MSGBOX_ID_ETHPROC, 0, (char *)pkt);
 
   return 1;

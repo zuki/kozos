@@ -32,6 +32,7 @@ static int start_threads(int argc, char *argv[])
   kz_run(udp_main,      "udp",     12, 0x100, 0, NULL);
   kz_run(httpd_main,    "httpd",   14, 0x100, 0, NULL);
   kz_run(echo_main,     "echo",    14, 0x100, 0, NULL);
+  kz_run(ntp_main,      "ntp",     14, 0x100, 0, NULL);
 
   kz_chpri(15);   /* 優先順位を下げて、アイドルスレッドに移行する */
   INTR_ENABLE;    /* 割込みを有効にする */

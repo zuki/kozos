@@ -4,6 +4,7 @@
 #include "timerdrv.h"
 #include "netdrv.h"
 #include "icmp.h"
+#include "ntp.h"
 #include "lib.h"
 
 /* コンソールドライバの使用開始をコンソールドライバに依頼する */
@@ -52,6 +53,17 @@ static void send_icmp()
   kz_send(MSGBOX_ID_ICMPPROC, 0, (char *)buf);
 }
 
+/* ntpdateの開始をntpタスクに依頼する */
+static void send_ntp()
+{
+  struct netbuf *buf;
+
+  buf = kz_kmalloc(sizeof(*buf));
+  buf->cmd = NTP_CMD_SEND;
+  buf->option.ntp.send.ipaddr = NTP_SERVER;
+  kz_send(MSGBOX_ID_NTP, 0, (char *)buf);
+}
+
 int command_main(int argc, char *argv[])
 {
   char *p;
@@ -62,7 +74,7 @@ int command_main(int argc, char *argv[])
   while (1) {
     send_write("command> ");    /* プロンプト表示 */
 
-    /* コンソールカラン受信文字列を受け取る*/
+    /* コンソールからの受信文字列を受け取る*/
     kz_recv(MSGBOX_ID_CONSINPUT, &size, &p);
     if (p == NULL) {
       send_write("expired.\n");
@@ -79,6 +91,8 @@ int command_main(int argc, char *argv[])
     } else if (!strncmp(p, "ping", 4)) { /* pingコマンド */
       send_write("ping start.\n");
       send_icmp();
+    } else if (!strncmp(p, "date", 4)) { /* dateコマンド */
+      send_ntp();
     } else {
       send_write("unknown.\n");
     }
